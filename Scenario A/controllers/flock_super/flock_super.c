@@ -27,7 +27,8 @@ float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
 
 
 int offset;				// Offset of robots number
-float migrx, migrz;			// Migration vector
+float migrx= 25;                                                                                 // migration urge 
+float migrz = -25;	
 float orient_migr; 			// Migration orientation
 int t;
 
@@ -105,11 +106,13 @@ void compute_performance (float* fit_o, float* fit_c, float * fit_v){
 
   // average displacement velocity along direction of migratory urge
   float speed[2] = { avg_loc[0] - avg_loc_old[0], avg_loc[1] - avg_loc_old[1] };
-  //float speed[2] = avg_loc - avg_loc_old;
   projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
   
   * fit_v = projection > 0.0 ? projection/VMAX : 0.0; 
   
+  // update location info for next timestep
+  avg_loc_old[0] = avg_loc[0];
+  avg_loc_old[1] = avg_loc[1];
 }
 
 
@@ -148,7 +151,7 @@ void compute_fitness(float* fit_c, float* fit_o) {
 int main(int argc, char *args[]) {
 	char buffer[255];	// Buffer for sending data
 	int i;			// Index
-  
+  /*
 	if (argc == 4) { // Get parameters
 		offset = atoi(args[1]);
 		migrx = atof(args[2]);
@@ -159,7 +162,7 @@ int main(int argc, char *args[]) {
 		printf("Missing argument\n");
 		return 1;
 	}
-	
+*/
 	orient_migr = -atan2f(migrx,migrz);
 	if (orient_migr<0) {
 		orient_migr+=2*M_PI; // Keep value within 0, 2pi
@@ -187,7 +190,7 @@ int main(int argc, char *args[]) {
 				loc[i][2] = wb_supervisor_field_get_sf_rotation(robs_rotation[i])[3]; // THETA
 				
                     		// Sending positions to the robots, comment the following two lines if you don't want the supervisor sending it                   		
-                  		//sprintf(buffer,"%1d#%f#%f#%f##%f#%f",i+offset,loc[i][0],loc[i][1],loc[i][2], migrx, migrz);
+                  		//sprintf(buffer,"%1d#%f#%f",i+offset, migrx, migrz);
                   		//wb_emitter_send(emitter,buffer,strlen(buffer));				
     			}
 			//Compute and normalize fitness values

@@ -30,7 +30,7 @@
 /*Webots 2018b*/
 #define MAX_SPEED_WEB      6.28    // Maximum speed webots
 /*Webots 2018b*/
-#define FLOCK_SIZE	  9	  // Size of flock
+#define FLOCK_SIZE	  5	  // Size of flock
 #define TIME_STEP	  64	  // [ms] Length of time step
 
 #define AXLE_LENGTH 		0.052	// Distance between wheels of robot (meters)
@@ -116,6 +116,7 @@ static void reset() {
 	}
   
   	printf("Reset: robot %d\n",robot_id_u);
+  	
 }
 
 /*
@@ -201,7 +202,7 @@ void compute_wheel_speeds(int *msl, int *msr)
  */
 
 void reynolds_rules() {
-	
+	/*
 	int i, j, k;			// Loop counters
 	float avg_loc[2] = {0,0};	// Flock average positions
 	float avg_speed[2] = {0,0};	// Flock average speeds
@@ -209,7 +210,7 @@ void reynolds_rules() {
 	float dispersion[2] = {0,0};
 	float consistency[2] = {0,0};
 	
-	/*
+	
 	// Compute averages over the whole flock
 	for(i=0; i<FLOCK_SIZE; i++) {
 		if (i == robot_id) 
@@ -279,7 +280,7 @@ void reynolds_rules() {
     }
         
     speed[robot_id][1] *= -1; //y axis of webots is inverted
-        
+    */    
     //move the robot according to some migration rule
     if(MIGRATORY_URGE == 0){
       	speed[robot_id][0] += 0.01*cos(loc[robot_id][2] + M_PI/2);
@@ -291,7 +292,7 @@ void reynolds_rules() {
         speed[robot_id][1] -= MIGRATION_WEIGHT*(migr[1] - loc[robot_id][1]); //y axis of webots is inverted
     }
 
-    */    
+       
 }
 
 /*
@@ -310,21 +311,25 @@ void initial_pos(void){
 		while (wb_receiver_get_queue_length(receiver) == 0)	wb_robot_step(TIME_STEP);
 		
 		inbuffer = (char*) wb_receiver_get_data(receiver);
-		sscanf(inbuffer,"%d#%f#%f#%f##%f#%f",&rob_nb,&rob_x,&rob_z,&rob_theta, &migr[0], &migr[1]);
+		sscanf(inbuffer,"%d#%f#%f#%f##%f#%f",&rob_nb,&rob_x,&rob_z,&rob_theta, &migr[0], &migr[1]);		
 		// Only info about self will be taken into account at first.
     
                 //robot_nb %= FLOCK_SIZE;
+
                 if (rob_nb == robot_id) 
 		{
+    		printf("Robot[%d] : migratory urge [ %f , %f ]\n", robot_id, migr[0], migr[1]);
 			// Initialize self position
 			loc[rob_nb][0] = rob_x; 		// x-position
 			loc[rob_nb][1] = rob_z; 		// z-position
 			loc[rob_nb][2] = rob_theta; 		// theta
-			prev_loc[rob_nb][0] = loc[rob_nb][0];
-			prev_loc[rob_nb][1] = loc[rob_nb][1];
+			//prev_loc[rob_nb][0] = loc[rob_nb][0];
+			//prev_loc[rob_nb][1] = loc[rob_nb][1];
 			initialized[rob_nb] = 1; 		// initialized = true
 		}		
 		wb_receiver_next_packet(receiver);
+		
+		
 	}	
 }
 
@@ -448,8 +453,8 @@ int main(){
     
 		// Send current position to neighbors, uncomment for I14, don't forget to uncomment the declration of "outbuffer" at the begining of this function.
 		/*Implement your code here*/
-		sprintf(outbuffer,"%1d#%f#%f#%f",robot_id,loc[robot_id][0],loc[robot_id][1], loc[robot_id][2]);
-                  		wb_emitter_send(emitter,outbuffer,strlen(outbuffer));
+		//sprintf(outbuffer,"%1d#%f#%f#%f",robot_id,loc[robot_id][0],loc[robot_id][1], loc[robot_id][2]);
+                  		//wb_emitter_send(emitter,outbuffer,strlen(outbuffer));
                   			
 		// Continue one step
 		wb_robot_step(TIME_STEP);
