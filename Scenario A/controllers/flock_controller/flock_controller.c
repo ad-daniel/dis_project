@@ -224,7 +224,7 @@ void reynolds_rules() {
 		}
 	}
 	
-    for (j=0;j<2;j++) 
+                           for (j=0;j<2;j++) 
 	{
           	avg_speed[j] /= FLOCK_SIZE-1;
           	avg_loc[j] /= FLOCK_SIZE-1;

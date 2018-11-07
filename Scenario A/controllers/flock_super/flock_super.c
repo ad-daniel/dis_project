@@ -4,13 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+//#include <complex.h>
 
 #include <webots/robot.h>
 #include <webots/emitter.h>
 #include <webots/supervisor.h>
 
-#define FLOCK_SIZE	9		// Number of robots in flock
+#define FLOCK_SIZE	5		// Number of robots in flock
 #define TIME_STEP	64		// [ms] Length of time step
+#define VMAX                             0.1287
 
 WbNodeRef robs[FLOCK_SIZE];		// Robots nodes
 WbFieldRef robs_trans[FLOCK_SIZE];	// Robots translation fields
@@ -69,9 +71,52 @@ void send_init_poses(void)
 	}
 }
 
+void compute_performance (float* fit_o, float* fit_c, float * fit_v){
+  float real = 0.0;   float imm = 0.0;
+  float avg_loc[2] = {0,0};
+  static float avg_loc_old[2] = {0,0};
+  float sum_dist = 0.0;
+  float projection;
+  
+   // Compute averages position
+   for(int i=0; i<FLOCK_SIZE; i++) {
+     for (int j=0;j<2;j++) {
+       avg_loc[j] += loc[i][j];
+       }
+  }
+  for (int j = 0; j<2; j++){
+    avg_loc[j] /= FLOCK_SIZE;
+  }
+  
+  // compute alignment between the robots
+  for(int i = 0; i < FLOCK_SIZE; i++){
+   real += cos(loc[i][2]);
+   imm += sin(loc[i][2]); 
+  }
+  
+  * fit_o = sqrt(real * real + imm * imm) / FLOCK_SIZE;
+  
+  // compute dispersion of robots
+  for (int i = 0; i < FLOCK_SIZE; i++){
+    sum_dist += sqrt( pow(loc[i][0]-avg_loc[0],2)+pow(loc[i][1]-avg_loc[1],2));
+  }
+  
+  * fit_c = 1 / (1 + (sum_dist/FLOCK_SIZE));
+
+  // average displacement velocity along direction of migratory urge
+  float speed[2] = { avg_loc[0] - avg_loc_old[0], avg_loc[1] - avg_loc_old[1] };
+  //float speed[2] = avg_loc - avg_loc_old;
+  projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
+  
+  * fit_v = projection > 0.0 ? projection/VMAX : 0.0; 
+  
+}
+
+
+
 /*
  * Compute performance metric.
- */
+
 void compute_fitness(float* fit_c, float* fit_o) {
 	*fit_c = 0; *fit_o = 0;
 	// Compute performance indices
@@ -93,7 +138,7 @@ void compute_fitness(float* fit_c, float* fit_o) {
 	*fit_c /= FLOCK_SIZE*(FLOCK_SIZE+1)/2;
 	*fit_o /= FLOCK_SIZE;
 }
-
+ */
 
 
 /*
@@ -126,8 +171,10 @@ int main(int argc, char *args[]) {
 	
 	// Compute reference fitness values
 	
-	float fit_cluster;			// Performance metric for aggregation
-	float fit_orient;			// Performance metric for orientation
+	float fit_cohesion;			// Performance metric for cohesion
+	float fit_orientation;			// Performance metric for orientation
+	float fit_velocity;
+	float performance;	
 		
 	for(;;) {
 		wb_robot_step(TIME_STEP);
@@ -144,10 +191,13 @@ int main(int argc, char *args[]) {
                   		//wb_emitter_send(emitter,buffer,strlen(buffer));				
     			}
 			//Compute and normalize fitness values
-			compute_fitness(&fit_cluster, &fit_orient);
-			fit_cluster = fit_cluster_ref/fit_cluster;
-			fit_orient = 1-fit_orient/M_PI;
-			printf("time:%d, Topology Performance: %f\n", t, fit_cluster);			
+			compute_performance(&fit_orientation, &fit_cohesion, & fit_velocity);
+  			performance = fit_orientation * fit_cohesion * fit_velocity;
+  			printf("time:%d :: orient: %f :: cohes : %f :: veloc : %f ::: performance %f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);
+			//compute_fitness(&fit_cluster, &fit_orient);
+			//fit_cluster = fit_cluster_ref/fit_cluster;
+			//fit_orient = 1-fit_orient/M_PI;
+			//printf("time:%d, Topology Performance: %f\n", t, fit_cluster);			
 			
 		}
 		
