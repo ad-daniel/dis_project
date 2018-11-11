@@ -116,6 +116,10 @@ static void reset() {
 	}
   
   	printf("Reset: robot %d\n",robot_id_u);
+	
+	// Migration urge
+	    migr[0] = 25; // to Change
+        migr[1] = -25;
 }
 
 /*
@@ -326,6 +330,23 @@ void initial_pos(void){
 		}		
 		wb_receiver_next_packet(receiver);
 	}	
+}
+
+void e_pucks_neighbor(*neighbor,*dist){
+	int i,j;
+	float d[FLOCK_SIZE];
+	float angle[FLOCK_SIZE];
+	
+	for(i=0;i<FLOCK_SIZE;i++){
+		get_epuck_parameters(&d,%angle);
+		for(j=0;i<FLOCK_SIZE;j++){
+			neighbor[i][j] = 
+	}
+	}
+}
+
+void get_epuck_parameters(*d,*angle){
+	//to implement
 }
 
 /*
