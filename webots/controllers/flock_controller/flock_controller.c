@@ -38,6 +38,8 @@
 #define DELTA_T			0.064	// Timestep (seconds)
 
 
+#define MAX_COMMUNICATION_DIST 0.25 // maximum communication distance in [cm]
+
 #define RULE1_THRESHOLD     0.20   // Threshold to activate aggregation rule. default 0.20
 #define RULE1_WEIGHT        (0.3/10)	   // Weight of aggregation rule. default 0.6/10
 
@@ -226,43 +228,75 @@ void reynolds_rules() {
 	float cohesion[2] = {0,0};
 	float dispersion[2] = {0,0};
 	float consistency[2] = {0,0};
-	
-	/* Compute averages over the whole flock */
-	for (j=0;j<2;j++) {
-            rel_avg_speed[j] = 0;
-            rel_avg_loc[j] = 0;
+	float eucl_dist;
+	int n_flockmates = 1;
+
+	/* Compute averages over the local flock */
+	for (k=0;k<FLOCK_SIZE;k++) {
+		if(k == robot_id){
+			continue; // dont consider yourself in the average
+		}
+
+		eucl_dist = sqrt(pow(loc[k][0] - loc[robot_id][0], 2.0) + pow(loc[i][1] - loc[robot_id][1], 2.0));
+
+		if(eucl_dist < MAX_COMMUNICATION_DIST){
+			for(j=0; j<2; j++){
+            	rel_avg_speed[j] += speed[i][j];
+            	rel_avg_loc[j] += loc[i][j];
+            }
+            n_flockmates += 1;
          }
+     }
+
+    for(j=0;j<2;j++){
+     	if(n_flockmates > 1){
+     		rel_avg_speed[j] /= (n_flockmates - 1);
+     		rel_avg_loc[j] /= (n_flockmates - 1);
+     	}
+     	else{
+     		rel_avg_speed[j] = speed[robot_id][j];
+     		rel_avg_loc[j] = rel_avg_loc[j];
+	    }
+   	}
 	
 	
-	/* Rule 1 - Aggregation/Cohesion: move towards the center of mass */
-    
-        for (j=0;j<2;j++) 
+	/* Rule 1 - Aggregation/Cohesion: move towards the center of mass */    
+    for (j=0;j<2;j++) 
 	{	
-            cohesion[j] = 0;
+		if (sqrt(pow(loc[robot_id][0]-avg_loc[0],2)+pow(loc[robot_id][1]-avg_loc[1],2)) > RULE1_THRESHOLD){
+            cohesion[j] = rel_avg_loc[j] - loc[robot_id][j];
+        }
 	}
 
 	/* Rule 2 - Dispersion/Separation: keep far enough from flockmates */
-	for (j=0;j<2;j++) {
-    	   dispersion[j] = 0; //
-	}
-  
+	for (k=0; k<FLOCK_SIZE;k++){
+		// dont consider yourself
+		if(k != robot_id){
+			// if flockmate is too close
+			if (pow(loc[robot_id][0]-loc[k][0],2)+pow(loc[robot_id][1]-loc[k][1],2) < RULE2_THRESHOLD){
+				for (j=0;j<2;j++){
+					//relative distance to kth flockmate
+					dispersion[j] += 1/(loc[robot_id][j] -loc[k][j]);
+				}
+			}
+		}
+  	}
+
 	/* Rule 3 - Consistency/Alignment: match the speeds of flockmates */
 	for (j=0;j<2;j++) {
-		consistency[j] = 0;
-         }
+		// align with flock speed
+		consistency[j] = avg_speed[j] - speed[robot_id][j];
+		
+    }
 
          //aggregation of all behaviors with relative influence determined by weights
-         for (j=0;j<2;j++) {
-                 speed[robot_id][j]  =  cohesion[j]    * RULE1_WEIGHT;
-                 speed[robot_id][j] +=  dispersion[j]  * RULE2_WEIGHT;
-                 speed[robot_id][j] +=  consistency[j] * RULE3_WEIGHT;
-         }
-        speed[robot_id][1] *= -1; //y axis of webots is inverted
-        
-    /* ' Our rule 4 - Migratory urge */
-        /* CHANGED FOR MIGRATORY URGE WITH WHEEL SPEED DIFF */
-        
-        //  --> not here because each wheel independently done in compute_wheel_speeds
+    for (j=0;j<2;j++) {
+        speed[robot_id][j]  =  cohesion[j]    * RULE1_WEIGHT;
+        speed[robot_id][j] +=  dispersion[j]  * RULE2_WEIGHT;
+        speed[robot_id][j] +=  consistency[j] * RULE3_WEIGHT;
+    }
+    
+    speed[robot_id][1] *= -1; //y axis of webots is inverted
 }
 
 /*
@@ -359,9 +393,9 @@ int main(){
                 bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
         }
 
-		 // Adapt Braitenberg values (empirical tests)
-                 bmsl/=MIN_SENS; bmsr/=MIN_SENS;
-                 bmsl+=66; bmsr+=72;
+		// Adapt Braitenberg values (empirical tests)
+        bmsl/=MIN_SENS; bmsr/=MIN_SENS;
+        bmsl+=66; bmsr+=72;
               
 		/* Send and get information */
 		send_ping();  // sending a ping to other robot, so they can measure their distance to this robot
