@@ -133,7 +133,7 @@ static void reset()
 		initialized[i] = 0;		  // Set initialization to 0 (= not yet initialized)
 	}
   
-        printf("Reset: robot %d\n",robot_id_u);
+	printf("Reset: robot %d\n",robot_id_u);
     /*    
         migr[0] = 25;
         migr[1] = -25;
@@ -263,7 +263,7 @@ void reynolds_rules() {
 	/* Rule 1 - Aggregation/Cohesion: move towards the center of mass */    
     for (j=0;j<2;j++) 
 	{	
-		if (sqrt(pow(loc[robot_id][0]-avg_loc[0],2)+pow(loc[robot_id][1]-avg_loc[1],2)) > RULE1_THRESHOLD){
+		if (sqrt(pow(loc[robot_id][0]-rel_avg_loc[0],2)+pow(loc[robot_id][1]-rel_avg_loc[1],2)) > RULE1_THRESHOLD){
             cohesion[j] = rel_avg_loc[j] - loc[robot_id][j];
         }
 	}
@@ -285,7 +285,7 @@ void reynolds_rules() {
 	/* Rule 3 - Consistency/Alignment: match the speeds of flockmates */
 	for (j=0;j<2;j++) {
 		// align with flock speed
-		consistency[j] = avg_speed[j] - speed[robot_id][j];
+		consistency[j] = rel_avg_speed[j] - speed[robot_id][j];
 		
     }
 
