@@ -68,6 +68,7 @@ int e_puck_matrix[16] = {17,29,34,10,8,-38,-56,-76,-72,-58,-36,8,10,36,28,18}; /
 
 
 WbDeviceTag ds[NB_SENSORS];	// Handle for the infrared distance sensors
+WbDeviceTag emitter;		// Handle for the emitter node
 WbDeviceTag receiver2;		// Handle for the receiver node
 WbDeviceTag emitter2;		// Handle for the emitter node
 
@@ -98,10 +99,6 @@ static void reset()
 {
 	wb_robot_init();
 
-
-	receiver2 = wb_robot_get_device("receiver2");
-	emitter2 = wb_robot_get_device("emitter2");
-	
 	/*Webots 2018b*/
 	//get motors
 	left_motor = wb_robot_get_device("left wheel motor");
@@ -134,6 +131,8 @@ static void reset()
 	}
   
 	printf("Reset: robot %d\n",robot_id_u);
+	printf("Robot [%d] using urge: [%f][%f]\n", robot_id, migr[0], migr[1]);
+
     /*    
         migr[0] = 25;
         migr[1] = -25;
@@ -201,8 +200,8 @@ void compute_wheel_speeds(int *msl, int *msr)
 	
 	/* Add the migratory urge shift */
 	// Convert to wheel speeds
-	msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
-	msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
+	*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
+	*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
 
 	/*
 	// (BEFORE) Convert to wheel speeds!
@@ -222,7 +221,7 @@ void compute_wheel_speeds(int *msl, int *msr)
  */
 
 void reynolds_rules() {
-	int i, j, k;			// Loop counters
+	int j, k;			// Loop counters
 	float rel_avg_loc[2] = {0,0};	// Flock average positions
 	float rel_avg_speed[2] = {0,0};	// Flock average speeds
 	float cohesion[2] = {0,0};
@@ -237,16 +236,16 @@ void reynolds_rules() {
 			continue; // dont consider yourself in the average
 		}
 
-		eucl_dist = sqrt(pow(loc[k][0] - loc[robot_id][0], 2.0) + pow(loc[i][1] - loc[robot_id][1], 2.0));
+		eucl_dist = sqrt(pow(relative_pos[k][0] - relative_pos[robot_id][0], 2.0) + pow(relative_pos[k][1] - relative_pos[robot_id][1], 2.0));
 
 		if(eucl_dist < MAX_COMMUNICATION_DIST){
 			for(j=0; j<2; j++){
-            	rel_avg_speed[j] += speed[i][j];
-            	rel_avg_loc[j] += loc[i][j];
+            	rel_avg_speed[j] += relative_speed[k][j];
+            	rel_avg_loc[j] += relative_pos[k][j];
             }
             n_flockmates += 1;
          }
-     }
+    }
 
     for(j=0;j<2;j++){
      	if(n_flockmates > 1){
@@ -254,8 +253,8 @@ void reynolds_rules() {
      		rel_avg_loc[j] /= (n_flockmates - 1);
      	}
      	else{
-     		rel_avg_speed[j] = speed[robot_id][j];
-     		rel_avg_loc[j] = rel_avg_loc[j];
+     		rel_avg_speed[j] = relative_speed[robot_id][j];
+     		rel_avg_loc[j] = relative_pos[robot_id][j];
 	    }
    	}
 	
@@ -263,8 +262,8 @@ void reynolds_rules() {
 	/* Rule 1 - Aggregation/Cohesion: move towards the center of mass */    
     for (j=0;j<2;j++) 
 	{	
-		if (sqrt(pow(loc[robot_id][0]-rel_avg_loc[0],2)+pow(loc[robot_id][1]-rel_avg_loc[1],2)) > RULE1_THRESHOLD){
-            cohesion[j] = rel_avg_loc[j] - loc[robot_id][j];
+		if (sqrt(pow(relative_pos[robot_id][0]-rel_avg_loc[0],2)+pow(relative_pos[robot_id][1]-rel_avg_loc[1],2)) > RULE1_THRESHOLD){
+            cohesion[j] = rel_avg_loc[j] - relative_pos[robot_id][j];
         }
 	}
 
@@ -273,10 +272,10 @@ void reynolds_rules() {
 		// dont consider yourself
 		if(k != robot_id){
 			// if flockmate is too close
-			if (pow(loc[robot_id][0]-loc[k][0],2)+pow(loc[robot_id][1]-loc[k][1],2) < RULE2_THRESHOLD){
+			if (pow(relative_pos[robot_id][0]-relative_pos[k][0],2)+pow(relative_pos[robot_id][1]-relative_pos[k][1],2) < RULE2_THRESHOLD){
 				for (j=0;j<2;j++){
 					//relative distance to kth flockmate
-					dispersion[j] += 1/(loc[robot_id][j] -loc[k][j]);
+					dispersion[j] += 1/(relative_pos[robot_id][j] - relative_pos[k][j]);
 				}
 			}
 		}
@@ -285,7 +284,7 @@ void reynolds_rules() {
 	/* Rule 3 - Consistency/Alignment: match the speeds of flockmates */
 	for (j=0;j<2;j++) {
 		// align with flock speed
-		consistency[j] = rel_avg_speed[j] - speed[robot_id][j];
+		consistency[j] = rel_avg_speed[j] - relative_speed[robot_id][j];
 		
     }
 
@@ -373,6 +372,11 @@ int main(){
 	msr = 0; 
 	max_sens = 0; 
 	
+	// send migratory urge to supervisor
+	char outbuffer[255];
+	sprintf(outbuffer,"%f#%f",migr[0], migr[1]);
+	wb_emitter_send(emitter,outbuffer,strlen(outbuffer));
+
 	// Forever
 	for(;;){
 

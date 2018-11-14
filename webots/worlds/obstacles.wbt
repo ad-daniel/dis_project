@@ -525,7 +525,6 @@ Supervisor {
   ]
   name "super1"
   controller "flock_super"
-  controllerArgs "0 25 -25"
 }
 DEF epuck0 DifferentialWheels {
   translation -2.9 0 0

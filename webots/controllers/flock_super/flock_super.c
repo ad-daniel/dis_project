@@ -1,23 +1,31 @@
+/*****************************************************************************/
+/* File:         performance_estimation.c                                    */
+/* Version:      1.0                                                         */
+/* Date:         10-Oct-14                                                   */
+/* Description:  estimating the performance of a formation 		     */
+/*                                                                           */
+/* Author: 	 10-Oct-14 by Ali marjovi				     */
+/*****************************************************************************/
+
 
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-//#include <complex.h>
 
 #include <webots/robot.h>
-#include <webots/emitter.h>
+#include <webots/receiver.h>
 #include <webots/supervisor.h>
 
-#define FLOCK_SIZE	5		// Number of robots in flock
+#define FLOCK_SIZE	5 		// Number of robots in flock
 #define TIME_STEP	64		// [ms] Length of time step
 #define VMAX        0.1287
 
 WbNodeRef robs[FLOCK_SIZE];		// Robots nodes
 WbFieldRef robs_trans[FLOCK_SIZE];	// Robots translation fields
 WbFieldRef robs_rotation[FLOCK_SIZE];	// Robots rotation fields
-WbDeviceTag emitter;			// Single emitter
+WbDeviceTag receiver;
 
 float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
 
@@ -27,10 +35,11 @@ float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
 
 
 int offset;				// Offset of robots number
-float migrx;                                                                                 // migration urge 
-float migrz;	
+float migrx = 25;
+float migrz = -25;			// Migration vector
 float orient_migr; 			// Migration orientation
 int t;
+
 
 /*
  * Initialize flock position and devices
@@ -38,9 +47,7 @@ int t;
 void reset(void) {
 	wb_robot_init();
 
-	emitter = wb_robot_get_device("emitter");
-	if (emitter==0) printf("missing emitter\n");
-	
+
 	char rob[7] = "epuck0";
 	int i;
 	for (i=0;i<FLOCK_SIZE;i++) {
@@ -49,29 +56,17 @@ void reset(void) {
 		robs_trans[i] = wb_supervisor_node_get_field(robs[i],"translation");
 		robs_rotation[i] = wb_supervisor_node_get_field(robs[i],"rotation");
 	}
+
+	printf("Reset supervisor\n");
+
 }
 
 
-void send_init_poses(void)
-{
-  	char buffer[255];	// Buffer for sending data
-         int i;
-         
-         for (i=0;i<FLOCK_SIZE;i++) {
-		// Get data
-		loc[i][0] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[0]; // X
-		loc[i][1] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[2]; // Z
-		loc[i][2] = wb_supervisor_field_get_sf_rotation(robs_rotation[i])[3]; // THETA
 
-		// Send it out
-		sprintf(buffer,"%1d#%f#%f#%f##",i+offset,loc[i][0],loc[i][1],loc[i][2]);
-		wb_emitter_send(emitter,buffer,strlen(buffer));
 
-		// Run one step
-		wb_robot_step(TIME_STEP);
-	}
-}
-
+/*
+ * Compute performance metric.
+ */
 void compute_performance (float* fit_o, float* fit_c, float * fit_v){
 	float real = 0.0;   float imm = 0.0;
 	float avg_loc[2] = {0,0};
@@ -122,27 +117,11 @@ void compute_performance (float* fit_o, float* fit_c, float * fit_v){
  */
  
 int main(int argc, char *args[]) {
-	char buffer[255];	// Buffer for sending data
 	int i;			// Index
   
-	if (argc == 4) { // Get parameters
-		offset = atoi(args[1]);
-		migrx = atof(args[2]);
-		migrz = atof(args[3]);
-		//migration goal point comes from the controller arguments. It is defined in the world-file, under "controllerArgs" of the supervisor.
-		printf("Migratory instinct : (%f, %f)\n", migrx, migrz);
-	} else {
-		printf("Missing argument\n");
-		return 1;
-	}
-
-	orient_migr = -atan2f(migrx,migrz);
-	if (orient_migr<0) {
-		orient_migr+=2*M_PI; // Keep value within 0, 2pi
-	}
-
 	reset();
-	send_init_poses();
+
+	printf("Supervisor using urge: [%f][%f]\n", migrx, migrz);
 	
 	// Compute reference fitness values
 	
@@ -154,26 +133,22 @@ int main(int argc, char *args[]) {
 	for(;;) {
 		wb_robot_step(TIME_STEP);
 		
-		if (t % 10 == 0) {
+		if (t % 25 == 0) {
 			for (i=0;i<FLOCK_SIZE;i++) {
 				// Get data
 				loc[i][0] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[0]; // X
 				loc[i][1] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[2]; // Z
-				loc[i][2] = wb_supervisor_field_get_sf_rotation(robs_rotation[i])[3]; // THETA
-				
-				// Sending positions to the robots, comment the following two lines if you don't want the supervisor sending it                   		
-				//sprintf(buffer,"%1d#%f#%f",i+offset, migrx, migrz);
-				//wb_emitter_send(emitter,buffer,strlen(buffer));				
+				loc[i][2] = wb_supervisor_field_get_sf_rotation(robs_rotation[i])[3]; // THETA				
     		}
-			
+
 			//Compute and normalize fitness values
 			compute_performance(&fit_orientation, &fit_cohesion, & fit_velocity);
 	  		performance = fit_orientation * fit_cohesion * fit_velocity;
-	  		
-	  		printf("time:%d :: orient: %f :: cohes : %f :: veloc : %f ::: performance %f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
+			printf("time:%d :: orient: %f :: cohes : %f :: veloc : %f ::: performance %f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
+			
 		}
 		
-		t += TIME_STEP;			
-
+		t += TIME_STEP;
 	}
+
 }

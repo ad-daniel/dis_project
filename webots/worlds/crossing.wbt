@@ -9,7 +9,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.9998684634686608 0.016207307512567284 0.0006155842853415571 1.15569
-  position -1.60662 4.84674 2.3705
+  position -1.6051175327268212 4.941785230100673 2.412393186059213
 }
 PointLight {
   intensity 0.5
@@ -229,7 +229,6 @@ Supervisor {
   ]
   name "super0"
   controller "flock_super"
-  controllerArgs "0 25 -25"
 }
 Supervisor {
   children [
@@ -239,7 +238,6 @@ Supervisor {
   ]
   name "super1"
   controller "flock_super"
-  controllerArgs "0 25 -25"
 }
 DEF epuck0 DifferentialWheels {
   translation -0.1 0 0
