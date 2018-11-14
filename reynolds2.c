@@ -29,7 +29,7 @@
 /*Webots 2018b*/
 #define MAX_SPEED_WEB      6.28    // Maximum speed webots
 /*Webots 2018b*/
-#define FLOCK_SIZE	  4	  // Size of flock
+#define FLOCK_SIZE	  5	  // Size of flock
 #define TIME_STEP	  64	  // [ms] Length of time step
 
 #define AXLE_LENGTH 		0.052	// Distance between wheels of robot (meters)
@@ -51,6 +51,11 @@
 #define MIGRATORY_URGE 1 // Tells the robots if they should just go forward or move towards a specific migratory direction
 
 #define ABS(x) ((x>=0)?(x):-(x))
+
+
+/* Added */
+#define MIGRATORY_MEAN 0.99   //For stability of robot controller (check if good idea - might be better if == 1)
+
 
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
@@ -78,6 +83,12 @@ char* robot_name;
 
 float theta_robots[FLOCK_SIZE];
 
+
+
+/* ADDED FOR MIGRATORY (difference applied on wheel)*/
+float migratory_diff = 0;
+
+
 /*
  * Reset the robot's devices and get its ID
  */
@@ -92,10 +103,10 @@ static void reset()
 	/*Webots 2018b*/
 	//get motors
 	left_motor = wb_robot_get_device("left wheel motor");
-         right_motor = wb_robot_get_device("right wheel motor");
-         wb_motor_set_position(left_motor, INFINITY);
-         wb_motor_set_position(right_motor, INFINITY);
-         /*Webots 2018b*/
+    right_motor = wb_robot_get_device("right wheel motor");
+    wb_motor_set_position(left_motor, INFINITY);
+    wb_motor_set_position(right_motor, INFINITY);
+    /*Webots 2018b*/
 	
 	
 	int i;
@@ -121,9 +132,10 @@ static void reset()
 	}
   
         printf("Reset: robot %d\n",robot_id_u);
-        
+    /*    
         migr[0] = 25;
         migr[1] = -25;
+	*/
 }
 
 
@@ -185,10 +197,18 @@ void compute_wheel_speeds(int *msl, int *msr)
 	// Compute rotational control
 	float w = Kw*bearing;
 	
-	// Convert to wheel speeds!
-	
+	/* Add the migratory urge shift */
+	// Convert to wheel speeds
+	msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
+	msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
+
+	/*
+	// (BEFORE) Convert to wheel speeds!
 	*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
 	*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+	
+	*/
+
 //	printf("bearing = %f, u = %f, w = %f, msl = %f, msr = %f\n", bearing, u, w, msl, msr);
 	limit(msl,MAX_SPEED);
 	limit(msr,MAX_SPEED);
@@ -232,23 +252,17 @@ void reynolds_rules() {
          }
 
          //aggregation of all behaviors with relative influence determined by weights
-         for (j=0;j<2;j++) 
-	{
-                 speed[robot_id][j] = cohesion[j] * RULE1_WEIGHT;
-                 speed[robot_id][j] +=  dispersion[j] * RULE2_WEIGHT;
+         for (j=0;j<2;j++) {
+                 speed[robot_id][j]  =  cohesion[j]    * RULE1_WEIGHT;
+                 speed[robot_id][j] +=  dispersion[j]  * RULE2_WEIGHT;
                  speed[robot_id][j] +=  consistency[j] * RULE3_WEIGHT;
          }
         speed[robot_id][1] *= -1; //y axis of webots is inverted
         
-        //move the robot according to some migration rule
-        if(MIGRATORY_URGE == 0){
-          speed[robot_id][0] += 0.01*cos(my_position[2] + M_PI/2);
-          speed[robot_id][1] += 0.01*sin(my_position[2] + M_PI/2);
-        }
-        else {
-            speed[robot_id][0] += (migr[0]-my_position[0]) * MIGRATION_WEIGHT;
-            speed[robot_id][1] -= (migr[1]-my_position[1]) * MIGRATION_WEIGHT; //y axis of webots is inverted
-        }
+    /* ' Our rule 4 - Migratory urge */
+        /* CHANGED FOR MIGRATORY URGE WITH WHEEL SPEED DIFF */
+        
+        //  --> not here because each wheel independently done in compute_wheel_speeds
 }
 
 /*
@@ -258,7 +272,7 @@ void reynolds_rules() {
 */
 void send_ping(void)  
 {
-        char out[10];
+    char out[10];
 	strcpy(out,robot_name);  // in the ping message we send the name of the robot.
 	wb_emitter_send(emitter2,out,strlen(out)+1); 
 }
@@ -269,8 +283,8 @@ void send_ping(void)
 */
 void process_received_ping_messages(void)
 {
-        const double *message_direction;
-        double message_rssi; // Received Signal Strength indicator
+    const double *message_direction;
+    double message_rssi; // Received Signal Strength indicator
 	double theta;
 	double range;
 	char *inbuffer;	// Buffer for the receiver node
@@ -282,8 +296,8 @@ void process_received_ping_messages(void)
 		double y = message_direction[2];
 		double x = message_direction[1];
 
-                theta =	-atan2(y,x);
-                theta = theta + my_position[2]; // find the relative theta;
+        theta =	-atan2(y,x);
+        theta = theta + my_position[2]; // find the relative theta;
 		range = sqrt((1/message_rssi));
 		
 
@@ -321,27 +335,29 @@ int main(){
 	
  	reset();			// Resetting the robot
 
-	msl = 0; msr = 0; 
+	msl = 0; 
+	msr = 0; 
 	max_sens = 0; 
 	
 	// Forever
 	for(;;){
 
-		bmsl = 0; bmsr = 0;
-                sum_sensors = 0;
+		bmsl = 0; 
+		bmsr = 0;
+        sum_sensors = 0;
 		max_sens = 0;
                 
 		/* Braitenberg */
 		for(i=0;i<NB_SENSORS;i++) 
 		{
 			    distances[i]=wb_distance_sensor_get_value(ds[i]); //Read sensor values
-                            sum_sensors += distances[i]; // Add up sensor values
-                            max_sens = max_sens>distances[i]?max_sens:distances[i]; // Check if new highest sensor value
+                sum_sensors += distances[i]; // Add up sensor values
+                max_sens = max_sens>distances[i]?max_sens:distances[i]; // Check if new highest sensor value
 
-                            // Weighted sum of distance sensor values for Braitenburg vehicle
-                            bmsr += e_puck_matrix[i] * distances[i];
-                            bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
-                 }
+                // Weighted sum of distance sensor values for Braitenburg vehicle
+                bmsr += e_puck_matrix[i] * distances[i];
+                bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
+        }
 
 		 // Adapt Braitenberg values (empirical tests)
                  bmsl/=MIN_SENS; bmsr/=MIN_SENS;
@@ -354,10 +370,13 @@ int main(){
 		prev_my_position[0] = my_position[0];
 		prev_my_position[1] = my_position[1];
 		
-		update_self_motion(msl,msr);
+		//update value of my_position
+		update_self_motion(msl,msr);         
 		
+		//update value of relative_pos et relative_speed
 		process_received_ping_messages();
 
+		//absolute speed
 		speed[robot_id][0] = (1/DELTA_T)*(my_position[0]-prev_my_position[0]);
 		speed[robot_id][1] = (1/DELTA_T)*(my_position[1]-prev_my_position[1]);
     
@@ -381,8 +400,14 @@ int main(){
 		// Set speed
 		msl_w = msl*MAX_SPEED_WEB/1000;
 		msr_w = msr*MAX_SPEED_WEB/1000;
+
+		/*ADDED CODE HERE */
+		//For migratory urge compute difference performed by each wheel
+		migratory_diff =  (MIGRATORY_MEAN * migratory_diff) + (msl_w - msr_w);
+
+
 		wb_motor_set_velocity(left_motor, msl_w);
-                  wb_motor_set_velocity(right_motor, msr_w);
+        wb_motor_set_velocity(right_motor, msr_w);
 		//wb_differential_wheels_set_speed(msl,msr);
 		/*Webots 2018b*/
     
