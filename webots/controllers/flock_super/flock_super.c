@@ -35,8 +35,8 @@ float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
 
 
 int offset;				// Offset of robots number
-float migrx = 25;
-float migrz = -25;			// Migration vector
+float migrx = 3;
+float migrz = 0;			// Migration vector
 float orient_migr; 			// Migration orientation
 int t;
 
@@ -133,7 +133,7 @@ int main(int argc, char *args[]) {
 	for(;;) {
 		wb_robot_step(TIME_STEP);
 		
-		if (t % 25 == 0) {
+		if (t % 50 == 0) {
 			for (i=0;i<FLOCK_SIZE;i++) {
 				// Get data
 				loc[i][0] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[0]; // X
@@ -144,7 +144,7 @@ int main(int argc, char *args[]) {
 			//Compute and normalize fitness values
 			compute_performance(&fit_orientation, &fit_cohesion, & fit_velocity);
 	  		performance = fit_orientation * fit_cohesion * fit_velocity;
-			printf("time:%d :: orient: %f :: cohes : %f :: veloc : %f ::: performance %f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
+			printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: performance %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
 			
 		}
 		

@@ -50,7 +50,7 @@
 
 #define MIGRATION_WEIGHT    (0.01/10)   // Wheight of attraction towards the common goal. default 0.01/10
 
-#define MIGRATORY_URGE 1 // Tells the robots if they should just go forward or move towards a specific migratory direction
+#define MIGRATORY_URGE 0 // Tells the robots if they should just go forward or move towards a specific migratory direction
 
 #define ABS(x) ((x>=0)?(x):-(x))
 
@@ -68,7 +68,6 @@ int e_puck_matrix[16] = {17,29,34,10,8,-38,-56,-76,-72,-58,-36,8,10,36,28,18}; /
 
 
 WbDeviceTag ds[NB_SENSORS];	// Handle for the infrared distance sensors
-WbDeviceTag emitter;		// Handle for the emitter node
 WbDeviceTag receiver2;		// Handle for the receiver node
 WbDeviceTag emitter2;		// Handle for the emitter node
 
@@ -81,7 +80,7 @@ float prev_my_position[3];  		// X, Z, Theta of the current robot in the previou
 float speed[FLOCK_SIZE][2];		// Speeds calculated with Reynold's rules
 float relative_speed[FLOCK_SIZE][2];	// Speeds calculated with Reynold's rules
 int initialized[FLOCK_SIZE];		// != 0 if initial positions have been received
-float migr[2] = {25,-25};	        // Migration vector
+float migr[2] = {3,0};	        // Migration vector
 char* robot_name;
 
 float theta_robots[FLOCK_SIZE];
@@ -99,6 +98,10 @@ static void reset()
 {
 	wb_robot_init();
 
+
+	receiver2 = wb_robot_get_device("receiver2");
+	emitter2 = wb_robot_get_device("emitter2");
+
 	/*Webots 2018b*/
 	//get motors
 	left_motor = wb_robot_get_device("left wheel motor");
@@ -107,7 +110,7 @@ static void reset()
     wb_motor_set_position(right_motor, INFINITY);
     /*Webots 2018b*/
 	
-	
+
 	int i;
 	char s[4]="ps0";
 	for(i=0; i<NB_SENSORS;i++) {
@@ -199,16 +202,17 @@ void compute_wheel_speeds(int *msl, int *msr)
 	float w = Kw*bearing;
 	
 	/* Add the migratory urge shift */
-	// Convert to wheel speeds
-	*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
-	*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
-
-	/*
-	// (BEFORE) Convert to wheel speeds!
-	*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-	*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+	if (MIGRATORY_URGE){
+		// Convert to wheel speeds
+		*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
+		*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
+	}
+	else{
+		// Convert to wheel speeds!
+		*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+		*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+	}
 	
-	*/
 
 //	printf("bearing = %f, u = %f, w = %f, msl = %f, msr = %f\n", bearing, u, w, msl, msr);
 	limit(msl,MAX_SPEED);
@@ -238,7 +242,7 @@ void reynolds_rules() {
 
 		eucl_dist = sqrt(pow(relative_pos[k][0] - relative_pos[robot_id][0], 2.0) + pow(relative_pos[k][1] - relative_pos[robot_id][1], 2.0));
 
-		if(eucl_dist < MAX_COMMUNICATION_DIST){
+		if(eucl_dist <= MAX_COMMUNICATION_DIST){
 			for(j=0; j<2; j++){
             	rel_avg_speed[j] += relative_speed[k][j];
             	rel_avg_loc[j] += relative_pos[k][j];
@@ -262,7 +266,7 @@ void reynolds_rules() {
 	/* Rule 1 - Aggregation/Cohesion: move towards the center of mass */    
     for (j=0;j<2;j++) 
 	{	
-		if (sqrt(pow(relative_pos[robot_id][0]-rel_avg_loc[0],2)+pow(relative_pos[robot_id][1]-rel_avg_loc[1],2)) > RULE1_THRESHOLD){
+		if (sqrt(pow(relative_pos[robot_id][0]-rel_avg_loc[0],2.0)+pow(relative_pos[robot_id][1]-rel_avg_loc[1],2.0)) > RULE1_THRESHOLD){
             cohesion[j] = rel_avg_loc[j] - relative_pos[robot_id][j];
         }
 	}
@@ -272,7 +276,7 @@ void reynolds_rules() {
 		// dont consider yourself
 		if(k != robot_id){
 			// if flockmate is too close
-			if (pow(relative_pos[robot_id][0]-relative_pos[k][0],2)+pow(relative_pos[robot_id][1]-relative_pos[k][1],2) < RULE2_THRESHOLD){
+			if (sqrt(pow(relative_pos[robot_id][0]-relative_pos[k][0],2.0)+pow(relative_pos[robot_id][1]-relative_pos[k][1],2.0)) < RULE2_THRESHOLD){
 				for (j=0;j<2;j++){
 					//relative distance to kth flockmate
 					dispersion[j] += 1/(relative_pos[robot_id][j] - relative_pos[k][j]);
@@ -285,10 +289,12 @@ void reynolds_rules() {
 	for (j=0;j<2;j++) {
 		// align with flock speed
 		consistency[j] = rel_avg_speed[j] - relative_speed[robot_id][j];
+		// ALTERNATIVE, CHECK WHICH IS BETTER
+		//consistency[j] = rel_avg_speed[j];
 		
     }
 
-         //aggregation of all behaviors with relative influence determined by weights
+    //aggregation of all behaviors with relative influence determined by weights
     for (j=0;j<2;j++) {
         speed[robot_id][j]  =  cohesion[j]    * RULE1_WEIGHT;
         speed[robot_id][j] +=  dispersion[j]  * RULE2_WEIGHT;
@@ -296,6 +302,10 @@ void reynolds_rules() {
     }
     
     speed[robot_id][1] *= -1; //y axis of webots is inverted
+
+
+
+
 }
 
 /*
@@ -372,10 +382,6 @@ int main(){
 	msr = 0; 
 	max_sens = 0; 
 	
-	// send migratory urge to supervisor
-	char outbuffer[255];
-	sprintf(outbuffer,"%f#%f",migr[0], migr[1]);
-	wb_emitter_send(emitter,outbuffer,strlen(outbuffer));
 
 	// Forever
 	for(;;){
@@ -400,7 +406,8 @@ int main(){
 		// Adapt Braitenberg values (empirical tests)
         bmsl/=MIN_SENS; bmsr/=MIN_SENS;
         bmsl+=66; bmsr+=72;
-              
+          
+
 		/* Send and get information */
 		send_ping();  // sending a ping to other robot, so they can measure their distance to this robot
 
@@ -441,8 +448,10 @@ int main(){
 
 		/*ADDED CODE HERE */
 		//For migratory urge compute difference performed by each wheel
-		migratory_diff =  (MIGRATORY_MEAN * migratory_diff) + (msl_w - msr_w);
-
+		if(MIGRATORY_URGE){
+			migratory_diff =  (MIGRATORY_MEAN * migratory_diff) + (msl_w - msr_w);
+			//printf("Robot [%d] migr_diff: %f\n", robot_id, migratory_diff);
+		}
 
 		wb_motor_set_velocity(left_motor, msl_w);
         wb_motor_set_velocity(right_motor, msr_w);
