@@ -361,49 +361,54 @@ void process_received_ping_messages(void)
 }
 
 /* Obstacle avoidance with Braitenberg*/
-void obstacle_avoidance(float rel_or[], int *bmsl, int *bmsr, int *max_sens, int *sum_sensors)
+void obstacle_avoidance(int *bmsl, int *bmsr, int *max_sens, int *sum_sensors)
 {
     int distances[NB_SENSORS];      // Array for the distance sensor readings
 	float to_keep[FLOCK_SIZE] = {1,1,1,1,1,1,1,1}; //flag of sensor to consider for computation
     int i;                          // Loop counter
+    int j;
 
     static float lutAngle[] = {5.986479, 5.410521, 4.712389, 3.665191, 2.617994, 1.570796, 0.8726646, 0.296706}; //radian of middle of position of sensors
 
     // to_keep: get the two closest sensors around the orientation of the other robot and put 0 to not consider them afterwards
-    for(i=0; i<FLOCK_SIZE; i++) {
-    	if(rel_or[i] != -1) {
-			if(rel_or[i] > lutAngle[0] || rel_or[i] < lutAngle[7]) {
-				to_keep[0] = 0; 
-				to_keep[7] = 0;
-			}       	
-			else if(rel_or[i] > lutAngle[1]) {
-				to_keep[0] = 0;
-				to_keep[1] = 0;
-			} 	
-			else if(rel_or[i] > lutAngle[2]) {
-				to_keep[1] = 0;
-				to_keep[2] = 0;
-			}  	
-			else if(rel_or[i] > lutAngle[3]) {
-				to_keep[2] = 0;
-			 	to_keep[3] = 0;
+    for(j=0;j<FLOCK_SIZE; j++) {
+    	if(neighborhood[j] == 1) {
+
+	    	for(i=0; i<NB_SENSORS; i++) {
+	    	//if(rel_or[i] != -1) {
+				if(relative_pos[j][2] > lutAngle[0] || relative_pos[j][2] < lutAngle[7]) {
+					to_keep[0] = 0; 
+					to_keep[7] = 0;
+				}       	
+				else if(relative_pos[j][2] > lutAngle[1]) {
+					to_keep[0] = 0;
+					to_keep[1] = 0;
+				} 	
+				else if(relative_pos[j][2] > lutAngle[2]) {
+					to_keep[1] = 0;
+					to_keep[2] = 0;
+				}  	
+				else if(relative_pos[j][2] > lutAngle[3]) {
+					to_keep[2] = 0;
+				 	to_keep[3] = 0;
+				}
+				else if(relative_pos[j][2] > lutAngle[4]) {
+					to_keep[3] = 0;
+				 	to_keep[4] = 0;
+				}  
+				else if(relative_pos[j][2] > lutAngle[5]) {
+					to_keep[4] = 0;
+				 	to_keep[5] = 0;
+				} 	
+				else if(relative_pos[j][2] > lutAngle[6]) {
+					to_keep[5] = 0;
+				 	to_keep[6] = 0;
+				}  	
+				else if(relative_pos[j][2] > lutAngle[7]) {
+					to_keep[6] = 0;
+				 	to_keep[7] = 0;
+				} 
 			}
-			else if(rel_or[i] > lutAngle[4]) {
-				to_keep[3] = 0;
-			 	to_keep[4] = 0;
-			}  
-			else if(rel_or[i] > lutAngle[5]) {
-				to_keep[4] = 0;
-			 	to_keep[5] = 0;
-			} 	
-			else if(rel_or[i] > lutAngle[6]) {
-				to_keep[5] = 0;
-			 	to_keep[6] = 0;
-			}  	
-			else if(rel_or[i] > lutAngle[7]) {
-				to_keep[6] = 0;
-			 	to_keep[7] = 0;
-			} 
 		}
     }
 
@@ -419,7 +424,7 @@ void obstacle_avoidance(float rel_or[], int *bmsl, int *bmsr, int *max_sens, int
         *max_sens = max_sens > distances[i] ? max_sens:distances[i]; // Check if new highest sensor value
 
         // Weighted sum of distance sensor values for Braitenburg vehicle
-        *bmsr += e_puck_matrix[i] * distances[i] * to_keep[i];             // Add up sensor values IF in sensor to consider
+        *bmsr += e_puck_matrix[i] * distances[i] * to_keep[i];             // Add up sensor values ***IF*** in sensor to consider
         *bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i] * to_keep[i];
     }
 
@@ -459,9 +464,8 @@ int main(){
          
 		/* Need function to receive communication */
 
-
         /* Braitenberg for obstacle avoidance */   
-		obstacle_avoidance(rel_or, &bmsl, &bmsr, &max_sens, &sum_sensors);
+		obstacle_avoidance(&bmsl, &bmsr, &max_sens, &sum_sensors);
           
 
 		/* Send and get information */
