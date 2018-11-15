@@ -59,9 +59,10 @@
 
 #define MIGRATION_WEIGHT    (0.01/10)   // Wheight of attraction towards the common goal. default 0.01/10
 
-
-#define MIGRATORY_URGE 0 				// Tells the robots if they should just go forward or move towards a specific migratory direction
-
+/*FLAGS*/
+#define MIGRATORY_URGE 0 			// Disable/Enable the migration urge
+#define OBSTACLE_AVOIDANCE 0 		// Disable/Enable the obstacle avoidance
+#define REYNOLDS 1                          // Disable/Enable the Reynolds'rules
 /**************************************/
 /* Macros */
 #define ABS(x) ((x>=0)?(x):-(x))
@@ -100,7 +101,7 @@ char* robot_name;
 
 
 /* ADDED FOR MIGRATORY (difference applied on wheel)*/
-float migratory_diff = 0;
+float migratory_diff = 1;
 
 
 /*
@@ -263,43 +264,41 @@ void reynolds_rules() {
 	float cohesion[2] = {0,0};
 	float dispersion[2] = {0,0};
 	float consistency[2] = {0,0};
-	float eucl_dist;
-	int n_flockmates = 1;
+	int n_flockmates[2] = {0};
 
 	/* Compute averages over the local flock */
 	for (k=0;k<FLOCK_SIZE;k++) {
 		if(k == robot_id){
 			continue; // dont consider yourself in the average
 		}
-
-		eucl_dist = sqrt(pow(relative_pos[k][0] - relative_pos[robot_id][0], 2.0) + pow(relative_pos[k][1] - relative_pos[robot_id][1], 2.0));
-
-		if(eucl_dist <= MAX_COMMUNICATION_DIST){
-			for(j=0; j<2; j++){
-            	rel_avg_speed[j] += relative_speed[k][j];
-            	rel_avg_loc[j] += relative_pos[k][j];
-            }
-            n_flockmates += 1;
+		
+		if(neighborhood[k]){
+                    rel_avg_loc[0] += relative_pos[k][0];
+                    rel_avg_loc[1] += relative_pos[k][1];
+                    n_flockmates[0]++;
+                  }
+                  if(prev_neighborhood[k]){
+                    rel_avg_speed[0] += relative_speed[k][0];
+                    rel_avg_speed[1] += relative_speed[k][1];
+                    n_flockmates[1]++;
+                  }
          }
-    }
 
+    // Avoid division by zero
+    n_flockmates[0] = (n_flockmates[0]>0?n_flockmates[0]:1);
+    n_flockmates[1] = (n_flockmates[1]>0?n_flockmates[1]:1);
+    
+    printf("Robot %d: nb_flockmates %d & % d\n",robot_id,n_flockmates[0],n_flockmates[1]);
     for(j=0;j<2;j++){
-     	if(n_flockmates > 1){
-     		rel_avg_speed[j] /= (n_flockmates - 1);
-     		rel_avg_loc[j] /= (n_flockmates - 1);
-     	}
-     	else{
-     		rel_avg_speed[j] = relative_speed[robot_id][j];
-     		rel_avg_loc[j] = relative_pos[robot_id][j];
-	    }
-   	}
-	
+       rel_avg_speed[j] /= n_flockmates[1];
+       rel_avg_loc[j]   /= n_flockmates[0];
+	}
 	
 	/* Rule 1 - Aggregation/Cohesion: move towards the center of mass */    
     for (j=0;j<2;j++) 
 	{	
 		if (sqrt(pow(relative_pos[robot_id][0]-rel_avg_loc[0],2.0)+pow(relative_pos[robot_id][1]-rel_avg_loc[1],2.0)) > RULE1_THRESHOLD){
-            cohesion[j] = rel_avg_loc[j] - relative_pos[robot_id][j];
+            cohesion[j] = rel_avg_loc[j];
         }
 	}
 
@@ -311,7 +310,7 @@ void reynolds_rules() {
 			if (sqrt(pow(relative_pos[robot_id][0]-relative_pos[k][0],2.0)+pow(relative_pos[robot_id][1]-relative_pos[k][1],2.0)) < RULE2_THRESHOLD){
 				for (j=0;j<2;j++){
 					//relative distance to kth flockmate
-					dispersion[j] += 1/(relative_pos[robot_id][j] - relative_pos[k][j]);
+					dispersion[j] += 1/(relative_pos[robot_id][j]);
 				}
 			}
 		}
@@ -320,7 +319,7 @@ void reynolds_rules() {
 	/* Rule 3 - Consistency/Alignment: match the speeds of flockmates */
 	for (j=0;j<2;j++) {
 		// align with flock speed
-		consistency[j] = rel_avg_speed[j] - relative_speed[robot_id][j];
+		consistency[j] = rel_avg_speed[j];
 		// ALTERNATIVE, CHECK WHICH IS BETTER
 		//consistency[j] = rel_avg_speed[j];
 		
@@ -376,18 +375,18 @@ void update_neighborhood_states(float range, float theta, int other_robot_id){
  * compute the relative position, speed and orientation of each neighbors and set -1 to the others robots.
  * 
 */
-int epucks_message_received(void)
+void epucks_message_received(void)
 {
     const double *message_direction;
     double message_rssi; // Received Signal Strength indicator
 	double theta;
 	double range;
-	long int* inbuffer;	// Buffer for the receiver node
+	char* inbuffer;	// Buffer for the receiver node
     int other_robot_id;
 	int nb_neighbors = 0;
 	
 	while (wb_receiver_get_queue_length(receiver2) > 0) {
-		inbuffer = (long int*) wb_receiver_get_data(receiver2);
+		inbuffer = (char*) wb_receiver_get_data(receiver2);
 		message_direction = wb_receiver_get_emitter_direction(receiver2);
 		message_rssi = wb_receiver_get_signal_strength(receiver2);
 		double y = message_direction[2];
@@ -403,13 +402,11 @@ int epucks_message_received(void)
 		if(range<=MAX_COMMUNICATION_DIST){
 			update_neighborhood_states(range, theta, other_robot_id);
 			// Increment the number of neighbors
-			nb_neighbors++;
 		}
 		
 		wb_receiver_next_packet(receiver2);
 	}
 	
-	return(nb_neighbors);
 }
 
 
@@ -429,14 +426,13 @@ int epucks_message_received(void)
 /**************************************/
 
 /*
-int epucks_message_received(void)
+void epucks_message_received(void)
 {
 	bool read_buffer = 1;
 	while (read_buffer) // Read all the buffer
 	{
 	    IrcomMessage imsg;
 	    ircomPopMessage(&imsg);
-		int nb_neighbors = 0;
 	    if (imsg.error == 0)
 	    {
 			// get the message
@@ -450,7 +446,6 @@ int epucks_message_received(void)
 			// get the robot emitter id
 			int other_robot_id = (int)((value & MASQUE_ROBOT_ID)>>29); // pas sûr que ça marche ^^'
 			update_neighborhood_states(range, theta, other_robot_id);
-			nb_neighbors++;
 	    }
 	    else if (imsg.error > 0)
 	    {
@@ -462,7 +457,6 @@ int epucks_message_received(void)
 			read_buffer = false;
 		}
 	}
-	return(nb_neighbors);
 }
 
 */
@@ -554,9 +548,7 @@ int main(){
 	int distances[NB_SENSORS];			// Array for the distance sensor readings
 	int max_sens = 0;					// Store highest sensor value
 
-
  	reset();			// Resetting the robot
-	
 
 	// Forever
 	for(;;){
@@ -566,25 +558,24 @@ int main(){
         sum_sensors = 0;
 		max_sens = 0;
 
+		if(OBSTACLE_AVOIDANCE){
 		/* Braitenberg */
-		for(i=0;i<NB_SENSORS;i++) 
-		{
-			    distances[i]=wb_distance_sensor_get_value(ds[i]); 			//Read sensor values
-                sum_sensors += distances[i]; 								// Add up sensor values
-                max_sens = (max_sens>distances[i]?max_sens:distances[i]); 	// Check if new highest sensor value
+			/*for(i=0;i<NB_SENSORS;i++) 
+			{
+					distances[i]=wb_distance_sensor_get_value(ds[i]); 			//Read sensor values
+					sum_sensors += distances[i]; 								// Add up sensor values
+					max_sens = (max_sens>distances[i]?max_sens:distances[i]); 	// Check if new highest sensor value
 
-                // Weighted sum of distance sensor values for Braitenburg vehicle
-                bmsr += e_puck_matrix[i] * distances[i];
-                bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
-        }
+					// Weighted sum of distance sensor values for Braitenburg vehicle
+					bmsr += e_puck_matrix[i] * distances[i];
+					bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
+					  }*/
 
-        /* Braitenberg for obstacle avoidance */   
-		obstacle_avoidance(&bmsl, &bmsr, &max_sens, &sum_sensors);
-          
-
+			/* Braitenberg for obstacle avoidance */
+			obstacle_avoidance(&bmsl, &bmsr, &max_sens, &sum_sensors);
+		}
 		/* Send and get information */
 		send_ping();  // sending a ping to other robot, so they can measure their distance to this robot
-
 		/// Compute self position
 		prev_my_position[0] = my_position[0];
 		prev_my_position[1] = my_position[1];
@@ -593,16 +584,16 @@ int main(){
 		update_self_motion(msl,msr);         
 		
 		//update value of relative_pos et relative_speed
-		int nb_neighbors;
-		nb_neighbors = epucks_message_received();
+        epucks_message_received();
 		
 		//absolute speed
 		speed[robot_id][0] = (1/DELTA_T)*(my_position[0]-prev_my_position[0]);
 		speed[robot_id][1] = (1/DELTA_T)*(my_position[1]-prev_my_position[1]);
     
-		// Reynold's rules with all previous info (updates the speed[][] table)
-		reynolds_rules();
-    
+		if(REYNOLDS){
+			// Reynold's rules with all previous info (updates the speed[][] table)
+			reynolds_rules();
+		}
 		// Compute wheels speed from reynold's speed
 		compute_wheel_speeds(&msl, &msr);
     
