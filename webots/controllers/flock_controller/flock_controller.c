@@ -59,7 +59,8 @@
 
 #define MIGRATION_WEIGHT    (0.01/10)   // Wheight of attraction towards the common goal. default 0.01/10
 
-#define MIGRATORY_URGE 1 				// Tells the robots if they should just go forward or move towards a specific migratory direction
+
+#define MIGRATORY_URGE 0 				// Tells the robots if they should just go forward or move towards a specific migratory direction
 
 /**************************************/
 /* Macros */
@@ -233,16 +234,17 @@ void compute_wheel_speeds(int *msl, int *msr)
 	float w = Kw*bearing;
 	
 	/* Add the migratory urge shift */
-	// Convert to wheel speeds
-	*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
-	*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
-
-	/*
-	// (BEFORE) Convert to wheel speeds!
-	*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-	*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+	if (MIGRATORY_URGE){
+		// Convert to wheel speeds
+		*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
+		*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
+	}
+	else{
+		// Convert to wheel speeds!
+		*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+		*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+	}
 	
-	*/
 
 //	printf("bearing = %f, u = %f, w = %f, msl = %f, msr = %f\n", bearing, u, w, msl, msr);
 	limit(msl,MAX_SPEED);
@@ -319,7 +321,6 @@ void reynolds_rules() {
 	for (j=0;j<2;j++) {
 		// align with flock speed
 		consistency[j] = rel_avg_speed[j] - relative_speed[robot_id][j];
-
 		// ALTERNATIVE, CHECK WHICH IS BETTER
 		//consistency[j] = rel_avg_speed[j];
 		
@@ -333,6 +334,10 @@ void reynolds_rules() {
     }
     
     speed[robot_id][1] *= -1; //y axis of webots is inverted
+
+
+
+
 }
 
 /*
@@ -462,10 +467,80 @@ int epucks_message_received(void)
 
 */
 
-/*
- *
- *
-*/
+/* Obstacle avoidance with Braitenberg*/
+void obstacle_avoidance(int *bmsl, int *bmsr, int *max_sens, int *sum_sensors)
+{
+    int distances[NB_SENSORS];      // Array for the distance sensor readings
+	float to_keep[FLOCK_SIZE] = {1,1,1,1,1,1,1,1}; //flag of sensor to consider for computation
+    int i;                          // Loop counter
+    int j;
+
+    static float lutAngle[] = {5.986479, 5.410521, 4.712389, 3.665191, 2.617994, 1.570796, 0.8726646, 0.296706}; //radian of middle of position of sensors
+
+    // to_keep: get the two closest sensors around the orientation of the other robot and put 0 to not consider them afterwards
+    for(j=0;j<FLOCK_SIZE; j++) {
+    	if(neighborhood[j] == 1) {
+
+	    	for(i=0; i<NB_SENSORS; i++) {
+	    	//if(rel_or[i] != -1) {
+				if(relative_pos[j][2] > lutAngle[0] || relative_pos[j][2] < lutAngle[7]) {
+					to_keep[0] = 0; 
+					to_keep[7] = 0;
+				}       	
+				else if(relative_pos[j][2] > lutAngle[1]) {
+					to_keep[0] = 0;
+					to_keep[1] = 0;
+				} 	
+				else if(relative_pos[j][2] > lutAngle[2]) {
+					to_keep[1] = 0;
+					to_keep[2] = 0;
+				}  	
+				else if(relative_pos[j][2] > lutAngle[3]) {
+					to_keep[2] = 0;
+				 	to_keep[3] = 0;
+				}
+				else if(relative_pos[j][2] > lutAngle[4]) {
+					to_keep[3] = 0;
+				 	to_keep[4] = 0;
+				}  
+				else if(relative_pos[j][2] > lutAngle[5]) {
+					to_keep[4] = 0;
+				 	to_keep[5] = 0;
+				} 	
+				else if(relative_pos[j][2] > lutAngle[6]) {
+					to_keep[5] = 0;
+				 	to_keep[6] = 0;
+				}  	
+				else if(relative_pos[j][2] > lutAngle[7]) {
+					to_keep[6] = 0;
+				 	to_keep[7] = 0;
+				} 
+			}
+		}
+    }
+
+
+
+	/* Braitenberg */
+	for(i=0;i<NB_SENSORS;i++) 
+	{
+
+		distances[i]=wb_distance_sensor_get_value(ds[i]);           //Read sensor values
+
+        *sum_sensors += distances[i] * to_keep[i] ;                  
+        *max_sens = max_sens > distances[i] ? max_sens:distances[i]; // Check if new highest sensor value
+
+        // Weighted sum of distance sensor values for Braitenburg vehicle
+        *bmsr += e_puck_matrix[i] * distances[i] * to_keep[i];             // Add up sensor values ***IF*** in sensor to consider
+        *bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i] * to_keep[i];
+    }
+
+	// Adapt Braitenberg values (empirical tests)
+    *bmsl/=MIN_SENS + 66;
+    *bmsr/=MIN_SENS + 72;
+    
+}
+
 
 // the main function
 int main(){ 
@@ -490,7 +565,7 @@ int main(){
 		bmsr = 0;
         sum_sensors = 0;
 		max_sens = 0;
-                
+
 		/* Braitenberg */
 		for(i=0;i<NB_SENSORS;i++) 
 		{
@@ -503,9 +578,8 @@ int main(){
                 bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
         }
 
-		// Adapt Braitenberg values (empirical tests)
-        bmsl/=MIN_SENS; bmsr/=MIN_SENS;
-        bmsl+=66; bmsr+=72;
+        /* Braitenberg for obstacle avoidance */   
+		obstacle_avoidance(&bmsl, &bmsr, &max_sens, &sum_sensors);
           
 
 		/* Send and get information */
@@ -549,8 +623,10 @@ int main(){
 
 		/*ADDED CODE HERE */
 		//For migratory urge compute difference performed by each wheel
-		migratory_diff =  (MIGRATORY_MEAN * migratory_diff) + (msl_w - msr_w);
-
+		if(MIGRATORY_URGE){
+			migratory_diff =  (MIGRATORY_MEAN * migratory_diff) + (msl_w - msr_w);
+			//printf("Robot [%d] migr_diff: %f\n", robot_id, migratory_diff);
+		}
 
 		wb_motor_set_velocity(left_motor, msl_w);
         wb_motor_set_velocity(right_motor, msr_w);
