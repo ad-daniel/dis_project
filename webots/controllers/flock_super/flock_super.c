@@ -35,8 +35,8 @@ float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
 
 
 int offset;				// Offset of robots number
-float migrx = 25;
-float migrz = -25;			// Migration vector
+float migrx = 3;
+float migrz = 0;			// Migration vector
 float orient_migr; 			// Migration orientation
 int t;
 

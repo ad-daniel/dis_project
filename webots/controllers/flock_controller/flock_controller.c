@@ -68,7 +68,6 @@ int e_puck_matrix[16] = {17,29,34,10,8,-38,-56,-76,-72,-58,-36,8,10,36,28,18}; /
 
 
 WbDeviceTag ds[NB_SENSORS];	// Handle for the infrared distance sensors
-WbDeviceTag emitter;		// Handle for the emitter node
 WbDeviceTag receiver2;		// Handle for the receiver node
 WbDeviceTag emitter2;		// Handle for the emitter node
 
@@ -81,7 +80,7 @@ float prev_my_position[3];  		// X, Z, Theta of the current robot in the previou
 float speed[FLOCK_SIZE][2];		// Speeds calculated with Reynold's rules
 float relative_speed[FLOCK_SIZE][2];	// Speeds calculated with Reynold's rules
 int initialized[FLOCK_SIZE];		// != 0 if initial positions have been received
-float migr[2] = {25,0};	        // Migration vector
+float migr[2] = {3,0};	        // Migration vector
 char* robot_name;
 
 float theta_robots[FLOCK_SIZE];
@@ -99,6 +98,10 @@ static void reset()
 {
 	wb_robot_init();
 
+
+	receiver2 = wb_robot_get_device("receiver2");
+	emitter2 = wb_robot_get_device("emitter2");
+
 	/*Webots 2018b*/
 	//get motors
 	left_motor = wb_robot_get_device("left wheel motor");
@@ -107,7 +110,7 @@ static void reset()
     wb_motor_set_position(right_motor, INFINITY);
     /*Webots 2018b*/
 	
-	
+
 	int i;
 	char s[4]="ps0";
 	for(i=0; i<NB_SENSORS;i++) {
@@ -272,7 +275,7 @@ void reynolds_rules() {
 		// dont consider yourself
 		if(k != robot_id){
 			// if flockmate is too close
-			if (pow(relative_pos[robot_id][0]-relative_pos[k][0],2.0)+pow(relative_pos[robot_id][1]-relative_pos[k][1],2.0) < RULE2_THRESHOLD){
+			if (sqrt(pow(relative_pos[robot_id][0]-relative_pos[k][0],2.0)+pow(relative_pos[robot_id][1]-relative_pos[k][1],2.0)) < RULE2_THRESHOLD){
 				for (j=0;j<2;j++){
 					//relative distance to kth flockmate
 					dispersion[j] += 1/(relative_pos[robot_id][j] - relative_pos[k][j]);
@@ -375,10 +378,6 @@ int main(){
 	msr = 0; 
 	max_sens = 0; 
 	
-	// send migratory urge to supervisor
-	char outbuffer[255];
-	sprintf(outbuffer,"%f#%f",migr[0], migr[1]);
-	wb_emitter_send(emitter,outbuffer,strlen(outbuffer));
 
 	// Forever
 	for(;;){
@@ -403,7 +402,8 @@ int main(){
 		// Adapt Braitenberg values (empirical tests)
         bmsl/=MIN_SENS; bmsr/=MIN_SENS;
         bmsl+=66; bmsr+=72;
-              
+          
+
 		/* Send and get information */
 		send_ping();  // sending a ping to other robot, so they can measure their distance to this robot
 
