@@ -9,7 +9,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.9931345111565514 -0.11262694456245013 -0.03160718444222321 1.03351
-  position -1.870360313261707 7.89012022645217 4.969638561558587
+  position -1.6585415096424505 5.666309726373233 3.637095016590059
 }
 PointLight {
   intensity 0.5
@@ -150,7 +150,7 @@ DEF long_rock_6 Solid {
   }
 }
 DEF rock Solid {
-  translation -0.3793129397398859 -4.884981308350689e-14 -0.09544608759784753
+  translation -2.5952573522673035 6.217248937900877e-15 -1.682739114489296
   rotation 0 1 0 5.02662
   children [
     Shape {
@@ -175,7 +175,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.38774 0 -1.06532
+  translation -1.5993432241503 2.6645352591003757e-15 -1.6294988448256114
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -200,7 +200,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 0.6587288959979698 -2.6645352591003757e-15 0.4047886967833072
+  translation -0.7978770420795109 -3.4638958368304884e-14 1.9152170583027595
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -225,7 +225,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.5968506587616762 8.881784197001252e-16 -0.00772949692459482
+  translation -2.3292452518501268 2.6645352591003757e-15 1.8065472467680277
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -250,7 +250,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.34035 0 0.776227
+  translation -1.8841373751411958 0 1.7650143616576217
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -275,7 +275,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -2.4355283390574853 3.197442310920451e-14 0.1576115517356603
+  translation -2.798344625276277 0 1.78203446790886
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -300,7 +300,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 2.058110551707027 3.552713678800501e-15 -0.9394079943749998
+  translation -0.9866299954148361 8.881784197001252e-16 -1.7716344306674014
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -325,8 +325,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 0.5072972565999595 -3.552716839400251e-15 -0.9621040475132323
-  rotation 0 1 0 4.974188353
+  translation -1.7740867997139134 -8.881815802998747e-16 -1.8336395402196588
   children [
     Shape {
       appearance Appearance {
@@ -350,7 +349,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 0.931062 0 1.31682
+  translation -1.3107714241815631 0 1.880275443625086
   rotation 0 -1 0 0.325642
   children [
     Shape {
@@ -375,7 +374,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -0.6851109702685749 2.220446049250313e-14 0.7068919708160202
+  translation -1.585023920772265 1.7763568394002505e-15 1.8169664896797506
   children [
     Shape {
       appearance Appearance {
@@ -399,7 +398,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 1.91494 0 0.107609
+  translation -0.4685550197298962 0 1.8113854708716994
   children [
     Shape {
       appearance Appearance {
@@ -423,7 +422,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 0.958022 0 -0.127712
+  translation -2.5647649727319726 0 1.4739088456584348
   children [
     Shape {
       appearance Appearance {
@@ -447,7 +446,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.05597 -1.77636e-15 1.72366
+  translation -2.1949624731079718 -1.77636e-15 1.6062901185255134
   children [
     Shape {
       appearance Appearance {
@@ -471,8 +470,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -2.1452503985816915 3.552713678800501e-14 -0.5090196673837866
-  rotation 0 1 0 0.5235987739999998
+  translation -2.986382530930258 4.263256414560601e-14 -1.7749671011155772
   children [
     Shape {
       appearance Appearance {
@@ -496,8 +494,8 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -0.828129262078793 1.7763568394002505e-15 -0.33279877655860646
-  rotation 0 1 0 3.7025465139999993
+  translation -2.1655254527049883 8.881784197001252e-16 -1.6363677306367974
+  rotation 0 -1 0 2.05704
   children [
     Shape {
       appearance Appearance {
@@ -529,42 +527,102 @@ Supervisor {
   controller "flock_super"
 }
 DEF epuck0 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 0
   rotation 0 1 0 -1.5700000000112309
   name "epuck0"
   controller "flock_controller"
+  emitter_channel 0
+  receiver_channel 0
+  groundSensorsSlot [
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+  ]
 }
 DEF epuck1 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 0.1
   rotation 0 1 0 -1.5700000000112309
   name "epuck1"
   controller "flock_controller"
+  emitter_channel 0
+  receiver_channel 0
+  groundSensorsSlot [
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+  ]
 }
 DEF epuck2 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 -0.1
   rotation 0 1 0 -1.5700000000112309
   name "epuck2"
   controller "flock_controller"
+  emitter_channel 0
+  receiver_channel 0
+  groundSensorsSlot [
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+  ]
 }
 DEF epuck3 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 0.213892
   rotation 0 1 0 -1.5700000000112309
   name "epuck3"
   controller "flock_controller"
+  emitter_channel 0
+  receiver_channel 0
+  groundSensorsSlot [
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+  ]
 }
 DEF epuck4 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 -0.2
   rotation 0 1 0 -1.5700000000112309
   name "epuck4"
   controller "flock_controller"
+  emitter_channel 0
+  receiver_channel 0
+  groundSensorsSlot [
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+  ]
 }

@@ -289,7 +289,6 @@ void reynolds_rules() {
 	for (j=0;j<2;j++) {
 		// align with flock speed
 		consistency[j] = rel_avg_speed[j] - relative_speed[robot_id][j];
-
 		// ALTERNATIVE, CHECK WHICH IS BETTER
 		//consistency[j] = rel_avg_speed[j];
 		
@@ -303,6 +302,10 @@ void reynolds_rules() {
     }
     
     speed[robot_id][1] *= -1; //y axis of webots is inverted
+
+
+
+
 }
 
 /*

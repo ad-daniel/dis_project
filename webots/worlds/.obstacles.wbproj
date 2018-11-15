@@ -7,9 +7,9 @@ centralWidgetVisible: 1
 selectionDisabled: 0
 viewpointLocked: 0
 orthographicViewHeight: 1
-textFiles: 0 "controllers/flock_super/flock_super.c" "controllers/flock_controller/flock_controller.c"
-renderingDevicePerspectives: epuck3:camera;1;1;0;0
-renderingDevicePerspectives: epuck4:camera;1;1;0;0
+textFiles: 1 "controllers/flock_super/flock_super.c" "controllers/flock_controller/flock_controller.c"
 renderingDevicePerspectives: epuck0:camera;1;1;0;0
-renderingDevicePerspectives: epuck1:camera;1;1;0;0
+renderingDevicePerspectives: epuck3:camera;1;1;0;0
 renderingDevicePerspectives: epuck2:camera;1;1;0;0
+renderingDevicePerspectives: epuck1:camera;1;1;0;0
+renderingDevicePerspectives: epuck4:camera;1;1;0;0
