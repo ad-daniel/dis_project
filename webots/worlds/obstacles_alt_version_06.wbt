@@ -1,4 +1,4 @@
-#VRML_SIM R2018a utf8
+#VRML_SIM R2018b utf8
 WorldInfo {
   info [
     "Description"
@@ -9,7 +9,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.9931345111565514 -0.11262694456245013 -0.03160718444222321 1.03351
-  position -1.6585415096424505 5.666309726373233 3.637095016590059
+  position -1.870360313261707 7.89012022645217 4.969638561558587
 }
 PointLight {
   intensity 0.5
@@ -150,7 +150,7 @@ DEF long_rock_6 Solid {
   }
 }
 DEF rock Solid {
-  translation -0.267548 0 -0.22167
+  translation -1.094610930359248 -3.730349362740526e-14 0.0345954690394259
   rotation 0 1 0 5.02662
   children [
     Shape {
@@ -175,7 +175,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.38774 0 -1.06532
+  translation -2.686983239485577 -2.6645352591003757e-15 -0.3363295371182773
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -200,7 +200,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 1.25364 0 0.47529
+  translation -1.5138912121143224 -9.237055564881302e-14 -0.45165201691568346
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -225,7 +225,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.53541 0 0.16115
+  translation -1.421203276770705 3.4638958368304884e-14 -0.20658171159681216
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -250,7 +250,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.34035 0 0.776227
+  translation -0.9221918895097152 -7.105427357601002e-15 0.014486270119822287
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -275,7 +275,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -2.34293 0 -0.0741107
+  translation -2.5274558110527177 4.529709940470639e-14 -0.3695824991150515
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -300,7 +300,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 1.09992 0 -1.32743
+  translation -0.31078512595553454 6.750155989720952e-14 0.6468526932823884
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -325,7 +325,8 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -0.105938 -1.77636e-15 -1.3463
+  translation -0.618606905488906 -8.881815802998751e-16 0.31870223201202497
+  rotation 0 1 0 4.974188353
   children [
     Shape {
       appearance Appearance {
@@ -349,7 +350,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 0.931062 0 1.31682
+  translation -1.7282441631299479 -6.217248937900877e-15 -0.467705856437276
   rotation 0 -1 0 0.325642
   children [
     Shape {
@@ -374,7 +375,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -0.0855468 0 0.846635
+  translation -2.232830218116063 6.750155989720952e-14 -0.46989444121076573
   children [
     Shape {
       appearance Appearance {
@@ -398,7 +399,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 1.91494 0 0.107609
+  translation -0.8389379876145915 -4.263256414560601e-14 0.14440212765375104
   children [
     Shape {
       appearance Appearance {
@@ -422,7 +423,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation 0.958022 0 -0.127712
+  translation -1.9534191687768838 -1.7763568394002505e-15 -0.4975435060418161
   children [
     Shape {
       appearance Appearance {
@@ -446,7 +447,8 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.05597 -1.77636e-15 1.72366
+  translation -0.3958071892845807 3.641531204710538e-14 0.5257181000983036
+  rotation 0 1 0 0.2617993870000007
   children [
     Shape {
       appearance Appearance {
@@ -470,7 +472,8 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.95487 0 -0.686015
+  translation -1.2121066103845677 6.217248937900877e-14 -0.26082168138344897
+  rotation 0 -0.9999999999999999 0 2.356194570341083
   children [
     Shape {
       appearance Appearance {
@@ -494,8 +497,8 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.20749 0 -0.478731
-  rotation 0 -1 0 2.05704
+  translation -1.5492970922234264 -9.592326932761353e-14 -0.2802597286811326
+  rotation 0 -1 0 3.366036973359174
   children [
     Shape {
       appearance Appearance {
@@ -527,42 +530,32 @@ Supervisor {
   controller "flock_super"
 }
 DEF epuck0 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 0
   rotation 0 1 0 -1.5700000000112309
-  controller "flock_controller"
   name "epuck0"
+  controller "flock_controller"
 }
 DEF epuck1 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 0.1
   rotation 0 1 0 -1.5700000000112309
-  controller "flock_controller"
   name "epuck1"
+  controller "flock_controller"
 }
 DEF epuck2 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 -0.1
   rotation 0 1 0 -1.5700000000112309
-  controller "flock_controller"
   name "epuck2"
+  controller "flock_controller"
 }
 DEF epuck3 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 0.213892
   rotation 0 1 0 -1.5700000000112309
-  controller "flock_controller"
   name "epuck3"
+  controller "flock_controller"
 }
 DEF epuck4 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 -0.2
   rotation 0 1 0 -1.5700000000112309
-  controller "flock_controller"
   name "epuck4"
+  controller "flock_controller"
 }

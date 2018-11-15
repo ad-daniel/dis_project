@@ -81,7 +81,7 @@ float prev_my_position[3];  		// X, Z, Theta of the current robot in the previou
 float speed[FLOCK_SIZE][2];		// Speeds calculated with Reynold's rules
 float relative_speed[FLOCK_SIZE][2];	// Speeds calculated with Reynold's rules
 int initialized[FLOCK_SIZE];		// != 0 if initial positions have been received
-float migr[2] = {25,-25};	        // Migration vector
+float migr[2] = {25,0};	        // Migration vector
 char* robot_name;
 
 float theta_robots[FLOCK_SIZE];
@@ -238,7 +238,7 @@ void reynolds_rules() {
 
 		eucl_dist = sqrt(pow(relative_pos[k][0] - relative_pos[robot_id][0], 2.0) + pow(relative_pos[k][1] - relative_pos[robot_id][1], 2.0));
 
-		if(eucl_dist < MAX_COMMUNICATION_DIST){
+		if(eucl_dist <= MAX_COMMUNICATION_DIST){
 			for(j=0; j<2; j++){
             	rel_avg_speed[j] += relative_speed[k][j];
             	rel_avg_loc[j] += relative_pos[k][j];
@@ -262,7 +262,7 @@ void reynolds_rules() {
 	/* Rule 1 - Aggregation/Cohesion: move towards the center of mass */    
     for (j=0;j<2;j++) 
 	{	
-		if (sqrt(pow(relative_pos[robot_id][0]-rel_avg_loc[0],2)+pow(relative_pos[robot_id][1]-rel_avg_loc[1],2)) > RULE1_THRESHOLD){
+		if (sqrt(pow(relative_pos[robot_id][0]-rel_avg_loc[0],2.0)+pow(relative_pos[robot_id][1]-rel_avg_loc[1],2.0)) > RULE1_THRESHOLD){
             cohesion[j] = rel_avg_loc[j] - relative_pos[robot_id][j];
         }
 	}
@@ -272,7 +272,7 @@ void reynolds_rules() {
 		// dont consider yourself
 		if(k != robot_id){
 			// if flockmate is too close
-			if (pow(relative_pos[robot_id][0]-relative_pos[k][0],2)+pow(relative_pos[robot_id][1]-relative_pos[k][1],2) < RULE2_THRESHOLD){
+			if (pow(relative_pos[robot_id][0]-relative_pos[k][0],2.0)+pow(relative_pos[robot_id][1]-relative_pos[k][1],2.0) < RULE2_THRESHOLD){
 				for (j=0;j<2;j++){
 					//relative distance to kth flockmate
 					dispersion[j] += 1/(relative_pos[robot_id][j] - relative_pos[k][j]);
@@ -285,10 +285,13 @@ void reynolds_rules() {
 	for (j=0;j<2;j++) {
 		// align with flock speed
 		consistency[j] = rel_avg_speed[j] - relative_speed[robot_id][j];
+
+		// ALTERNATIVE, CHECK WHICH IS BETTER
+		//consistency[j] = rel_avg_speed[j];
 		
     }
 
-         //aggregation of all behaviors with relative influence determined by weights
+    //aggregation of all behaviors with relative influence determined by weights
     for (j=0;j<2;j++) {
         speed[robot_id][j]  =  cohesion[j]    * RULE1_WEIGHT;
         speed[robot_id][j] +=  dispersion[j]  * RULE2_WEIGHT;
