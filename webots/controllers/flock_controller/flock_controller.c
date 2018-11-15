@@ -50,7 +50,7 @@
 
 #define MIGRATION_WEIGHT    (0.01/10)   // Wheight of attraction towards the common goal. default 0.01/10
 
-#define MIGRATORY_URGE 1 // Tells the robots if they should just go forward or move towards a specific migratory direction
+#define MIGRATORY_URGE 0 // Tells the robots if they should just go forward or move towards a specific migratory direction
 
 #define ABS(x) ((x>=0)?(x):-(x))
 
@@ -202,16 +202,17 @@ void compute_wheel_speeds(int *msl, int *msr)
 	float w = Kw*bearing;
 	
 	/* Add the migratory urge shift */
-	// Convert to wheel speeds
-	*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
-	*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
-
-	/*
-	// (BEFORE) Convert to wheel speeds!
-	*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-	*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+	if (MIGRATORY_URGE){
+		// Convert to wheel speeds
+		*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
+		*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
+	}
+	else{
+		// Convert to wheel speeds!
+		*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+		*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+	}
 	
-	*/
 
 //	printf("bearing = %f, u = %f, w = %f, msl = %f, msr = %f\n", bearing, u, w, msl, msr);
 	limit(msl,MAX_SPEED);
@@ -444,8 +445,10 @@ int main(){
 
 		/*ADDED CODE HERE */
 		//For migratory urge compute difference performed by each wheel
-		migratory_diff =  (MIGRATORY_MEAN * migratory_diff) + (msl_w - msr_w);
-
+		if(MIGRATORY_URGE){
+			migratory_diff =  (MIGRATORY_MEAN * migratory_diff) + (msl_w - msr_w);
+			//printf("Robot [%d] migr_diff: %f\n", robot_id, migratory_diff);
+		}
 
 		wb_motor_set_velocity(left_motor, msl_w);
         wb_motor_set_velocity(right_motor, msr_w);
