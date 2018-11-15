@@ -12,50 +12,62 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-
+#include <stdbool.h>
+/**************************************/
+/*Webots 2018b*/
 #include <webots/robot.h>
-/*Webots 2018b*/
 #include <webots/motor.h>
-/*Webots 2018b*/
 #include <webots/differential_wheels.h>
 #include <webots/distance_sensor.h>
 #include <webots/emitter.h>
 #include <webots/receiver.h>
 
-#define NB_SENSORS	  8	  // Number of distance sensors
+/**************************************/
+/*Webots 2018b*/
+#define MAX_SPEED_WEB      		6.28    // Maximum speed webots
+#define MAX_COMMUNICATION_DIST 	0.25 // maximum communication distance in [cm]
+/**************************************/
+
+#define NB_SENSORS	 	 	8	  // Number of distance sensors
 #define MIN_SENS          350     // Minimum sensibility value
 #define MAX_SENS          4096    // Maximum sensibility value
 #define MAX_SPEED         800     // Maximum speed
-/*Webots 2018b*/
-#define MAX_SPEED_WEB      6.28    // Maximum speed webots
-/*Webots 2018b*/
-#define FLOCK_SIZE	  5	  // Size of flock
-#define TIME_STEP	  64	  // [ms] Length of time step
 
-#define AXLE_LENGTH 		0.052	// Distance between wheels of robot (meters)
-#define SPEED_UNIT_RADS		0.00628	// Conversion factor from speed unit to radian per second
-#define WHEEL_RADIUS		0.0205	// Wheel radius (meters)
-#define DELTA_T			0.064	// Timestep (seconds)
+//<----------TO CHANGE---------->
+//Scenario A 
+#define FLOCK_SIZE	  		5	  // Size of flock
+//Scenario B
+//#define FLOCK_SIZE	  		10	  // Size of flock
 
+#define TIME_STEP	  		64	  // [ms] Length of time step
 
-#define MAX_COMMUNICATION_DIST 0.25 // maximum communication distance in [cm]
-
-#define RULE1_THRESHOLD     0.20   // Threshold to activate aggregation rule. default 0.20
-#define RULE1_WEIGHT        (0.3/10)	   // Weight of aggregation rule. default 0.6/10
-
-#define RULE2_THRESHOLD     0.15   // Threshold to activate dispersion rule. default 0.15
-#define RULE2_WEIGHT        (0.02/10)	   // Weight of dispersion rule. default 0.02/10
-
-#define RULE3_WEIGHT        (1.0/10)   // Weight of consistency rule. default 1.0/10
+#define AXLE_LENGTH 		0.052		// Distance between wheels of robot (meters)
+#define SPEED_UNIT_RADS		0.00628		// Conversion factor from speed unit to radian per second
+#define WHEEL_RADIUS		0.0205		// Wheel radius (meters)
+#define DELTA_T				0.064		// Timestep (seconds)
+#define MASQUE_ROBOT_ID		0xE0000000	// Keep 3 bits for the Robot_id
+/**************************************/
+/*Reynolds' rules*/
+/*1) Aggregation/Cohesion*/
+#define RULE1_THRESHOLD     0.20  		// Threshold to activate aggregation rule. default 0.20
+#define RULE1_WEIGHT        (0.3/10)	// Weight of aggregation rule. default 0.6/10
+/*2) Dispersion/Separation*/
+#define RULE2_THRESHOLD     0.15   		// Threshold to activate dispersion rule. default 0.15
+#define RULE2_WEIGHT        (0.02/10)	// Weight of dispersion rule. default 0.02/10
+/*3) Consistency/Alignment*/
+#define RULE3_WEIGHT        (1.0/10)   	// Weight of consistency rule. default 1.0/10
 
 #define MIGRATION_WEIGHT    (0.01/10)   // Wheight of attraction towards the common goal. default 0.01/10
 
-#define MIGRATORY_URGE 1 // Tells the robots if they should just go forward or move towards a specific migratory direction
+#define MIGRATORY_URGE 1 				// Tells the robots if they should just go forward or move towards a specific migratory direction
 
+/**************************************/
+/* Macros */
 #define ABS(x) ((x>=0)?(x):-(x))
+/**************************************/
 
 
-/* Added */
+/* Added by Pauline*/ 
 #define MIGRATORY_MEAN 0.99   //For stability of robot controller (check if good idea - might be better if == 1)
 
 
@@ -73,18 +85,17 @@ WbDeviceTag emitter2;		// Handle for the emitter node
 
 int robot_id_u, robot_id;	// Unique and normalized (between 0 and FLOCK_SIZE-1) robot ID
 
-float relative_pos[FLOCK_SIZE][3];	// relative X, Z, Theta of all robots
-float prev_relative_pos[FLOCK_SIZE][3];	// Previous relative  X, Z, Theta values
-float my_position[3];     		// X, Z, Theta of the current robot
-float prev_my_position[3];  		// X, Z, Theta of the current robot in the previous time step
-float speed[FLOCK_SIZE][2];		// Speeds calculated with Reynold's rules
-float relative_speed[FLOCK_SIZE][2];	// Speeds calculated with Reynold's rules
-int initialized[FLOCK_SIZE];		// != 0 if initial positions have been received
-float migr[2] = {3,0};	        // Migration vector
+bool  neighborhood[FLOCK_SIZE] = {0};				// Table of flag: 1 means in the neighborhood of the robot. Added by Hugo (15.11.18) 
+bool  prev_neighborhood[FLOCK_SIZE] = {0};
+float relative_pos[FLOCK_SIZE][3] = {{0}};			// relative X, Z, Theta of all robots
+float prev_relative_pos[FLOCK_SIZE][3] = {{0}};		// Previous relative  X, Z, Theta values
+float my_position[3] = {0};     					// X, Z, Theta of the current robot
+float prev_my_position[3]  = {0};  					// X, Z, Theta of the current robot in the previous time step
+float speed[FLOCK_SIZE][2] = {{0}};					// Speeds calculated with Reynold's rules
+float relative_speed[FLOCK_SIZE][2] = {{0}};		// Speeds calculated with Reynold's rules
+int   initialized[FLOCK_SIZE];						// != 0 if initial positions have been received
+float migr[2] = {0,-3};	        					// Migration vector in the E-puck referentiel
 char* robot_name;
-
-float theta_robots[FLOCK_SIZE];
-
 
 
 /* ADDED FOR MIGRATORY (difference applied on wheel)*/
@@ -95,12 +106,36 @@ float migratory_diff = 0;
  * Reset the robot's devices and get its ID
  */
 static void reset() 
-{
+{	
+	/***************************/
+	/*Webots 2018b*/
 	wb_robot_init();
-
-
 	receiver2 = wb_robot_get_device("receiver2");
 	emitter2 = wb_robot_get_device("emitter2");
+	/***************************/
+	
+	/***************************/ // added by Hugo (15.11.18) from \Project_Material\epuck_libIRcom\e-puck\prog\test\main.c
+	/*Real E-puck*/
+	/*
+	// init robot
+    e_init_port();
+    e_init_ad_scan();
+    e_init_uart1();
+    e_led_clear();	
+    e_init_motors();
+	
+	// wait for s to start -> Communication through bluetooth
+    //btcomWaitForCommand('s');
+    //btcomSendString("==== READY - IR TESTING ====\n\n");
+
+    e_calibrate_ir(); 
+
+    // initialize ircom and start reading
+    ircomStart();
+    ircomEnableContinuousListening();
+    ircomListen(); 						//-> keep listen and store the informations in a buffer
+	*/
+	/***************************/
 
 	/*Webots 2018b*/
 	//get motors
@@ -136,10 +171,6 @@ static void reset()
 	printf("Reset: robot %d\n",robot_id_u);
 	printf("Robot [%d] using urge: [%f][%f]\n", robot_id, migr[0], migr[1]);
 
-    /*    
-        migr[0] = 25;
-        migr[1] = -25;
-	*/
 }
 
 
@@ -311,25 +342,47 @@ void reynolds_rules() {
 */
 void send_ping(void)  
 {
-    char out[10];
+char out[10];
 	strcpy(out,robot_name);  // in the ping message we send the name of the robot.
-	wb_emitter_send(emitter2,out,strlen(out)+1); 
+	wb_emitter_send(emitter2,out,strlen(out)+1);  
 }
-
+void update_neighborhood_states(float range, float theta, int other_robot_id){
+	// Store the previews neighborhood -> goal: needed to compute the speed
+	prev_neighborhood[other_robot_id] = neighborhood[other_robot_id];
+	// Set Flag
+	neighborhood[other_robot_id] = 1;
+	// Update the prev position
+	prev_relative_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
+	prev_relative_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
+	prev_relative_pos[other_robot_id][2] = relative_pos[other_robot_id][2];
+	// Set relative location
+	relative_pos[other_robot_id][0] =  range * cos(theta);
+	relative_pos[other_robot_id][1] = -1.0 * range * sin(theta);
+	relative_pos[other_robot_id][2] = theta;
+	
+	if(prev_neighborhood[other_robot_id]){ // Take only in account the previouse neighborhood
+		// Set relative speed
+		relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
+		relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
+	}
+}
 /*
- * processing all the received ping messages, and calculate range and bearing to the other robots
- * the range and bearing are measured directly out of message RSSI and direction
+ * inspired by the process_received_ping_messages() function.
+ * compute the relative position, speed and orientation of each neighbors and set -1 to the others robots.
+ * 
 */
-void process_received_ping_messages(void)
+int epucks_message_received(void)
 {
     const double *message_direction;
     double message_rssi; // Received Signal Strength indicator
 	double theta;
 	double range;
-	char *inbuffer;	// Buffer for the receiver node
-        int other_robot_id;
+	long int* inbuffer;	// Buffer for the receiver node
+    int other_robot_id;
+	int nb_neighbors = 0;
+	
 	while (wb_receiver_get_queue_length(receiver2) > 0) {
-		inbuffer = (char*) wb_receiver_get_data(receiver2);
+		inbuffer = (long int*) wb_receiver_get_data(receiver2);
 		message_direction = wb_receiver_get_emitter_direction(receiver2);
 		message_rssi = wb_receiver_get_signal_strength(receiver2);
 		double y = message_direction[2];
@@ -339,44 +392,95 @@ void process_received_ping_messages(void)
         theta = theta + my_position[2]; // find the relative theta;
 		range = sqrt((1/message_rssi));
 		
-
-		other_robot_id = (int)(inbuffer[5]-'0');  // since the name of the sender is in the received message. Note: this does not work for robots having id bigger than 9!
+		// since the name of the sender is in the received message. Note: this does not work for robots having id bigger than 9!
+		other_robot_id = (int)(inbuffer[5]-'0'); 
+		//Check if in IR physical range
+		if(range<=MAX_COMMUNICATION_DIST){
+			update_neighborhood_states(range, theta, other_robot_id);
+			// Increment the number of neighbors
+			nb_neighbors++;
+		}
 		
-		// Get position update
-		//theta += dtheta_g[other_robot_id];
-		//theta_robots[other_robot_id] = 0.8*theta_robots[other_robot_id] + 0.2*theta;
-		prev_relative_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
-		prev_relative_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
-
-		relative_pos[other_robot_id][0] = range*cos(theta);  // relative x pos
-		relative_pos[other_robot_id][1] = -1.0 * range*sin(theta);   // relative y pos
-
-		//printf("Robot %s, from robot %d, x: %g, y: %g, theta %g, my theta %g\n",robot_name,other_robot_id,relative_pos[other_robot_id][0],relative_pos[other_robot_id][1],-atan2(y,x)*180.0/3.141592,my_position[2]*180.0/3.141592);
-		
-		relative_speed[other_robot_id][0] = relative_speed[other_robot_id][0]*0.0 + 1.0*(1/DELTA_T)*(relative_pos[other_robot_id][0]-prev_relative_pos[other_robot_id][0]);
-		relative_speed[other_robot_id][1] = relative_speed[other_robot_id][1]*0.0 + 1.0*(1/DELTA_T)*(relative_pos[other_robot_id][1]-prev_relative_pos[other_robot_id][1]);		
-		 
 		wb_receiver_next_packet(receiver2);
 	}
+	
+	return(nb_neighbors);
 }
 
 
+// Real E-puck version added by Hugo (15.11.18) !Note tested yet!
+/**************************************/
+/*Webots 2018b*/
+// Added by Hugo (15.11.18) -> to mimic the IR communication. Need to be removed on real E-puck!
+// To have an idea of the IrcomMessage structure no need to be included in this file.
+/*typedef struct
+{
+    long int value;
+    float distance;
+    float direction;
+    int receivingSensor;
+    int error; // -1 = inexistent msg, 0 = all is ok, 1 = error in transmission
+} IrcomMessage;
+/**************************************/
+
+/*
+int epucks_message_received(void)
+{
+	bool read_buffer = 1;
+	while (read_buffer) // Read all the buffer
+	{
+	    IrcomMessage imsg;
+	    ircomPopMessage(&imsg);
+		int nb_neighbors = 0;
+	    if (imsg.error == 0)
+	    {
+			// get the message
+			long int message_value = imsg.value;
+			// get the distance
+			float range = imsg.distance;
+			// get the orientation
+			float theta = ismg.direction;
+			// get the sensor from witch we get the message
+			int id_sensor = ismg.receivingSensor;
+			// get the robot emitter id
+			int other_robot_id = (int)((value & MASQUE_ROBOT_ID)>>29); // pas sûr que ça marche ^^'
+			update_neighborhood_states(range, theta, other_robot_id);
+			nb_neighbors++;
+	    }
+	    else if (imsg.error > 0)
+	    {
+		// error in transmission	
+	    }
+		else
+		{
+			// else imsg.error == -1 -> no message available in the queue
+			read_buffer = false;
+		}
+	}
+	return(nb_neighbors);
+}
+
+*/
+
+/*
+ *
+ *
+*/
+
 // the main function
 int main(){ 
-	int msl, msr;			// Wheel speeds
+	int msl = 0;						// Wheel speeds
+	int msr = 0;			
 	/*Webots 2018b*/
 	float msl_w, msr_w;
 	/*Webots 2018b*/
-	int bmsl, bmsr, sum_sensors;	// Braitenberg parameters
-	int i;				// Loop counter
-	int distances[NB_SENSORS];	// Array for the distance sensor readings
-	int max_sens;			// Store highest sensor value
-	
- 	reset();			// Resetting the robot
+	int bmsl, bmsr, sum_sensors;		// Braitenberg parameters
+	int i;								// Loop counter
+	int distances[NB_SENSORS];			// Array for the distance sensor readings
+	int max_sens = 0;					// Store highest sensor value
 
-	msl = 0; 
-	msr = 0; 
-	max_sens = 0; 
+
+ 	reset();			// Resetting the robot
 	
 
 	// Forever
@@ -390,9 +494,9 @@ int main(){
 		/* Braitenberg */
 		for(i=0;i<NB_SENSORS;i++) 
 		{
-			    distances[i]=wb_distance_sensor_get_value(ds[i]); //Read sensor values
-                sum_sensors += distances[i]; // Add up sensor values
-                max_sens = max_sens>distances[i]?max_sens:distances[i]; // Check if new highest sensor value
+			    distances[i]=wb_distance_sensor_get_value(ds[i]); 			//Read sensor values
+                sum_sensors += distances[i]; 								// Add up sensor values
+                max_sens = (max_sens>distances[i]?max_sens:distances[i]); 	// Check if new highest sensor value
 
                 // Weighted sum of distance sensor values for Braitenburg vehicle
                 bmsr += e_puck_matrix[i] * distances[i];
@@ -415,8 +519,9 @@ int main(){
 		update_self_motion(msl,msr);         
 		
 		//update value of relative_pos et relative_speed
-		process_received_ping_messages();
-
+		int nb_neighbors;
+		nb_neighbors = epucks_message_received();
+		
 		//absolute speed
 		speed[robot_id][0] = (1/DELTA_T)*(my_position[0]-prev_my_position[0]);
 		speed[robot_id][1] = (1/DELTA_T)*(my_position[1]-prev_my_position[1]);
