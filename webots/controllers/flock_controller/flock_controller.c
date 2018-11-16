@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdbool.h>
 /**************************************/
 /*Webots 2018b*/
@@ -62,7 +63,10 @@
 /*FLAGS*/
 #define MIGRATORY_URGE 0 			// Disable/Enable the migration urge
 #define OBSTACLE_AVOIDANCE 0 		// Disable/Enable the obstacle avoidance
-#define REYNOLDS 1                          // Disable/Enable the Reynolds'rules
+#define REYNOLDS 1                  // Disable/Enable the Reynolds'rules
+#define LOCAL_COMMUNICATION 1		// Disable/Enable local communication between the epucks
+
+#define WRITE_REL_POS 1				// Disable/Enable the writing of relative position of the robot1's neighborhood
 /**************************************/
 /* Macros */
 #define ABS(x) ((x>=0)?(x):-(x))
@@ -98,7 +102,6 @@ float relative_speed[FLOCK_SIZE][2] = {{0}};		// Speeds calculated with Reynold'
 int   initialized[FLOCK_SIZE];						// != 0 if initial positions have been received
 float migr[2] = {0,-3};	        					// Migration vector in the E-puck referentiel
 char* robot_name;
-
 
 /* ADDED FOR MIGRATORY (difference applied on wheel)*/
 float migratory_diff = 1;
@@ -338,19 +341,69 @@ void reynolds_rules() {
 
 
 }
+/*	write_relpos(int other_robots, int loop_time) // added by Hugo (16.11.18)
+ *
+ *  write the relative_pos of the robot1's neighborhood in a file. -> Test if send_ping() works properly
+ * 	Note: Need to be removed on real E-puck
+*/
+void sim_write_relpos(int other_robot_id,int loop_time){
+	FILE* f;
+	char fname[] = "../../../Simulation/robot_1.txt";			            // file name can be changed
 
-/*
+	if(robot_id == 1){ // Write only for the robot1
+  	printf("begin writing file\n");
+	if(!loop_time){
+		f = fopen(fname,"w"); // erase previous file
+	}
+	else{
+		f = fopen(fname,"a");
+	}
+	printf("writing file 1\n");
+  	if(!loop_time){
+  	// File header
+  	fprintf(f,"time_step\t neighbors_id\t x\t y\t theta\t \n");
+  	}
+  	else{
+  	// Datas
+         fprintf(f,"%d\t %d\t %f\t %f\t %f\t\n",loop_time,other_robot_id,relative_pos[other_robot_id][0],relative_pos[other_robot_id][1],relative_pos[other_robot_id][2]);
+	}
+	printf("writing file 2\n"); 
+	fclose(f);
+	}
+}
+
+/*	sim_send_message(void) // added by Hugo (16.11.18)
+ *
  *  each robot sends a ping message, so the other robots can measure relative range and bearing to the sender.
  *  the message contains the robot's name
- *  the range and bearing will be measured directly out of message RSSI and direction
+ *  the range and bearing will be measured directly out of message RSSI and direction.
+ *
 */
-void send_ping(void)  
+void sim_send_message(void)  
 {
 char out[10];
 	strcpy(out,robot_name);  // in the ping message we send the name of the robot.
 	wb_emitter_send(emitter2,out,strlen(out)+1);  
 }
-void update_neighborhood_states(float range, float theta, int other_robot_id){
+
+/* epuck_send_message(void) // added by Hugo (16.11.18)
+ *
+ * Send the Id of the current robot
+ *
+*/
+
+/*
+void epuck_send_message(void){
+	// Need to be implemented
+}
+*/
+/* update_neighborhood_states(float range, float theta, int other_robot_id, int loop_time) // added by Hugo in (16.11.18)
+ * compute the relative position, speed and orientation of each neighbors.
+ * update the previous position, orientation.
+ * update the flag table of neighborhood.
+ * write the relative distance of neighbors of robot 1. -> Need to set the flag WRITE_REL_POS = 1
+*/
+void update_neighborhood_states(float range, float theta, int other_robot_id, int loop_time){
 	// Store the previews neighborhood -> goal: needed to compute the speed
 	prev_neighborhood[other_robot_id] = neighborhood[other_robot_id];
 	// Set Flag
@@ -364,27 +417,35 @@ void update_neighborhood_states(float range, float theta, int other_robot_id){
 	relative_pos[other_robot_id][1] = -1.0 * range * sin(theta);
 	relative_pos[other_robot_id][2] = theta;
 	
+	// writing function
+	if(WRITE_REL_POS){
+		sim_write_relpos(other_robot_id,loop_time);
+	}
+	  
 	if(prev_neighborhood[other_robot_id]){ // Take only in account the previouse neighborhood
 		// Set relative speed
 		relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
 		relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
 	}
 }
-/*
+
+
+/* sim_receive_message(void) // added by Hugo (16.11.18)
+ *
  * inspired by the process_received_ping_messages() function.
- * compute the relative position, speed and orientation of each neighbors and set -1 to the others robots.
+ * read the buffer and compute the relative state.
+ * call update_neighborhood_states(range, theta, other_robot_id) to store the state
  * 
 */
-void epucks_message_received(void)
+void sim_receive_message(void)
 {
     const double *message_direction;
-    double message_rssi; // Received Signal Strength indicator
+    double message_rssi; 	// Received Signal Strength indicator
 	double theta;
 	double range;
-	char* inbuffer;	// Buffer for the receiver node
+	char* inbuffer;			// Buffer for the receiver node
     int other_robot_id;
-	int nb_neighbors = 0;
-	
+    static int loop_time = 0;
 	while (wb_receiver_get_queue_length(receiver2) > 0) {
 		inbuffer = (char*) wb_receiver_get_data(receiver2);
 		message_direction = wb_receiver_get_emitter_direction(receiver2);
@@ -400,35 +461,28 @@ void epucks_message_received(void)
 		other_robot_id = (int)(inbuffer[5]-'0'); 
 		//Check if in IR physical range
 		if(range<=MAX_COMMUNICATION_DIST){
-			update_neighborhood_states(range, theta, other_robot_id);
+			update_neighborhood_states(range, theta, other_robot_id, loop_time);
 			// Increment the number of neighbors
 		}
 		
 		wb_receiver_next_packet(receiver2);
 	}
 	
+	if(robot_id == 1){loop_time++;}
+	
 }
 
-
-// Real E-puck version added by Hugo (15.11.18) !Note tested yet!
-/**************************************/
-/*Webots 2018b*/
-// Added by Hugo (15.11.18) -> to mimic the IR communication. Need to be removed on real E-puck!
-// To have an idea of the IrcomMessage structure no need to be included in this file.
-/*typedef struct
-{
-    long int value;
-    float distance;
-    float direction;
-    int receivingSensor;
-    int error; // -1 = inexistent msg, 0 = all is ok, 1 = error in transmission
-} IrcomMessage;
-/**************************************/
-
+/* epuck_receive_message(void) // added by Hugo (16.11.18) !Note tested yet!
+ *
+ * inspired by the \Project_Material\epuck_libIRcom\e-puck\prog\test function.
+ * read the buffer and exctract the distance, the orientation, the other_robot_id and the sensors id.
+ * call the update_neighborhood_states(range, theta, other_robot_id) to store the datas 
+*/
 /*
-void epucks_message_received(void)
+void epuck_receive_message(void)
 {
 	bool read_buffer = 1;
+         static int loop_time;
 	while (read_buffer) // Read all the buffer
 	{
 	    IrcomMessage imsg;
@@ -445,7 +499,7 @@ void epucks_message_received(void)
 			int id_sensor = ismg.receivingSensor;
 			// get the robot emitter id
 			int other_robot_id = (int)((value & MASQUE_ROBOT_ID)>>29); // pas sûr que ça marche ^^'
-			update_neighborhood_states(range, theta, other_robot_id);
+			update_neighborhood_states(range, theta, other_robot_id, loop_time);
 	    }
 	    else if (imsg.error > 0)
 	    {
@@ -457,59 +511,60 @@ void epucks_message_received(void)
 			read_buffer = false;
 		}
 	}
+	loop_time++;
 }
 
 */
 
 /* Obstacle avoidance with Braitenberg*/
-void obstacle_avoidance(int *bmsl, int *bmsr, int *max_sens, int *sum_sensors)
+void obstacle_avoidance(int* bmsl, int* bmsr, int* max_sens, int* sum_sensors)
 {
     int distances[NB_SENSORS];      // Array for the distance sensor readings
-	float to_keep[FLOCK_SIZE] = {1,1,1,1,1,1,1,1}; //flag of sensor to consider for computation
+	float to_keep[NB_SENSORS]; 		//flag of sensor to consider for computation
     int i;                          // Loop counter
     int j;
 
     static float lutAngle[] = {5.986479, 5.410521, 4.712389, 3.665191, 2.617994, 1.570796, 0.8726646, 0.296706}; //radian of middle of position of sensors
 
+	// Initialization of to_keep at 1
+	for(int i=0; i<FLOCK_SIZE;i++){to_keep[i] = 1;}
+	
     // to_keep: get the two closest sensors around the orientation of the other robot and put 0 to not consider them afterwards
     for(j=0;j<FLOCK_SIZE; j++) {
     	if(neighborhood[j] == 1) {
-
-	    	for(i=0; i<NB_SENSORS; i++) {
-	    	//if(rel_or[i] != -1) {
-				if(relative_pos[j][2] > lutAngle[0] || relative_pos[j][2] < lutAngle[7]) {
-					to_keep[0] = 0; 
-					to_keep[7] = 0;
-				}       	
-				else if(relative_pos[j][2] > lutAngle[1]) {
-					to_keep[0] = 0;
-					to_keep[1] = 0;
-				} 	
-				else if(relative_pos[j][2] > lutAngle[2]) {
-					to_keep[1] = 0;
-					to_keep[2] = 0;
-				}  	
-				else if(relative_pos[j][2] > lutAngle[3]) {
-					to_keep[2] = 0;
-				 	to_keep[3] = 0;
-				}
-				else if(relative_pos[j][2] > lutAngle[4]) {
-					to_keep[3] = 0;
-				 	to_keep[4] = 0;
-				}  
-				else if(relative_pos[j][2] > lutAngle[5]) {
-					to_keep[4] = 0;
-				 	to_keep[5] = 0;
-				} 	
-				else if(relative_pos[j][2] > lutAngle[6]) {
-					to_keep[5] = 0;
-				 	to_keep[6] = 0;
-				}  	
-				else if(relative_pos[j][2] > lutAngle[7]) {
-					to_keep[6] = 0;
-				 	to_keep[7] = 0;
-				} 
+			
+			if(relative_pos[j][2] > lutAngle[0] || relative_pos[j][2] < lutAngle[7]) {
+				to_keep[0] = 0; 
+				to_keep[7] = 0;
+			}       	
+			else if(relative_pos[j][2] > lutAngle[1]) {
+				to_keep[0] = 0;
+				to_keep[1] = 0;
+			} 	
+			else if(relative_pos[j][2] > lutAngle[2]) {
+				to_keep[1] = 0;
+				to_keep[2] = 0;
+			}  	
+			else if(relative_pos[j][2] > lutAngle[3]) {
+				to_keep[2] = 0;
+				to_keep[3] = 0;
 			}
+			else if(relative_pos[j][2] > lutAngle[4]) {
+				to_keep[3] = 0;
+				to_keep[4] = 0;
+			}  
+			else if(relative_pos[j][2] > lutAngle[5]) {
+				to_keep[4] = 0;
+				to_keep[5] = 0;
+			} 	
+			else if(relative_pos[j][2] > lutAngle[6]) {
+				to_keep[5] = 0;
+				to_keep[6] = 0;
+			}  	
+			else if(relative_pos[j][2] > lutAngle[7]) {
+				to_keep[6] = 0;
+				to_keep[7] = 0;
+			} 
 		}
     }
 
@@ -519,10 +574,10 @@ void obstacle_avoidance(int *bmsl, int *bmsr, int *max_sens, int *sum_sensors)
 	for(i=0;i<NB_SENSORS;i++) 
 	{
 
-		distances[i]=wb_distance_sensor_get_value(ds[i]);           //Read sensor values
+		distances[i] = wb_distance_sensor_get_value(ds[i]);           //Read sensor values
 
         *sum_sensors += distances[i] * to_keep[i] ;                  
-        *max_sens = max_sens > distances[i] ? max_sens:distances[i]; // Check if new highest sensor value
+        *max_sens = *max_sens > distances[i] ? *max_sens:distances[i]; // Check if new highest sensor value
 
         // Weighted sum of distance sensor values for Braitenburg vehicle
         *bmsr += e_puck_matrix[i] * distances[i] * to_keep[i];             // Add up sensor values ***IF*** in sensor to consider
@@ -544,8 +599,6 @@ int main(){
 	float msl_w, msr_w;
 	/*Webots 2018b*/
 	int bmsl, bmsr, sum_sensors;		// Braitenberg parameters
-	int i;								// Loop counter
-	int distances[NB_SENSORS];			// Array for the distance sensor readings
 	int max_sens = 0;					// Store highest sensor value
 
  	reset();			// Resetting the robot
@@ -574,8 +627,12 @@ int main(){
 			/* Braitenberg for obstacle avoidance */
 			obstacle_avoidance(&bmsl, &bmsr, &max_sens, &sum_sensors);
 		}
+		
+		if(LOCAL_COMMUNICATION){
 		/* Send and get information */
-		send_ping();  // sending a ping to other robot, so they can measure their distance to this robot
+		sim_send_message();  		// sending a message to other robot in the neighborhood.
+		// epuck_send_message(); 	// sending a message to other robot in the neighborhood. For real E-pucks
+		}
 		/// Compute self position
 		prev_my_position[0] = my_position[0];
 		prev_my_position[1] = my_position[1];
@@ -583,9 +640,11 @@ int main(){
 		//update value of my_position
 		update_self_motion(msl,msr);         
 		
-		//update value of relative_pos et relative_speed
-        epucks_message_received();
+		if(LOCAL_COMMUNICATION){
 		
+        sim_receive_message();		// receiving a messages from other robots  in the neighborhood + update their local relative states in the current robot memory.
+		// epuck_receive_message();		// receiving a messages from other robots  in the neighborhood + update their local relative states in the current robot memory. For real Robots.
+		}
 		//absolute speed
 		speed[robot_id][0] = (1/DELTA_T)*(my_position[0]-prev_my_position[0]);
 		speed[robot_id][1] = (1/DELTA_T)*(my_position[1]-prev_my_position[1]);
