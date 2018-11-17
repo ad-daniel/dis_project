@@ -521,16 +521,14 @@ void obstacle_avoidance(int* bmsl, int* bmsr, int* max_sens, int* sum_sensors)
 {
     int distances[NB_SENSORS];      // Array for the distance sensor readings
 	float to_keep[NB_SENSORS]; 		//flag of sensor to consider for computation
-    int i;                          // Loop counter
-    int j;
-
+	
     static float lutAngle[] = {5.986479, 5.410521, 4.712389, 3.665191, 2.617994, 1.570796, 0.8726646, 0.296706}; //radian of middle of position of sensors
 
 	// Initialization of to_keep at 1
-	for(int i=0; i<FLOCK_SIZE;i++){to_keep[i] = 1;}
+	for(int i=0; i<NB_SENSORS;i++){to_keep[i] = 1;}
 	
     // to_keep: get the two closest sensors around the orientation of the other robot and put 0 to not consider them afterwards
-    for(j=0;j<FLOCK_SIZE; j++) {
+    for(int j=0;j<FLOCK_SIZE; j++) {
     	if(neighborhood[j] == 1) {
 			
 			if(relative_pos[j][2] > lutAngle[0] || relative_pos[j][2] < lutAngle[7]) {
@@ -571,7 +569,7 @@ void obstacle_avoidance(int* bmsl, int* bmsr, int* max_sens, int* sum_sensors)
 
 
 	/* Braitenberg */
-	for(i=0;i<NB_SENSORS;i++) 
+	for(int i=0;i<NB_SENSORS;i++) 
 	{
 
 		distances[i] = wb_distance_sensor_get_value(ds[i]);           //Read sensor values
