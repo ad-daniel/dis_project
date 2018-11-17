@@ -236,53 +236,72 @@ void compute_wheel_speeds(int *msl, int *msr)
  *  Update speed according to Reynold's rules
  */
 
-void reynolds_rules() {  //DANIEL TO ADD
-	int i, j, k;			// Loop counters
+void reynolds_rules() { 
+	int j, k;			// Loop counters
 	float rel_avg_loc[2] = {0,0};	// Flock average positions
 	float rel_avg_speed[2] = {0,0};	// Flock average speeds
 	float cohesion[2] = {0,0};
 	float dispersion[2] = {0,0};
 	float consistency[2] = {0,0};
-	
-	/* Compute averages over the whole flock */
-	for(i=0; i<FLOCK_SIZE; i++){
-        if(i==robot_id) continue; 
-            for (j=0;j<2;j++) {
-                rel_avg_speed[j] += relative_speed[i][j];
-                rel_avg_loc[j] += relative_pos[i][j] ;
-            }
-    }
-           
-    for (j=0;j<2;j++) {
-        rel_avg_speed[j]/=FLOCK_SIZE-1;
-        rel_avg_loc[j] /= FLOCK_SIZE-1; 
-    }
-	
-	
-	/* Rule 1 - Aggregation/Cohesion: move towards the center of mass */  
-    for (j=0;j<2;j++) 
-	{	
-            cohesion[j] = rel_avg_loc[j];
-            //printf("cohesion:%f\n", cohesion[j]);
+	int n_flockmates[2] = {0};
+
+	/* Compute averages over the local flock */
+	for (k=0;k<FLOCK_SIZE;k++) {
+		if(k == robot_id){
+			continue; // dont consider yourself in the average
+		}
+		
+		if(neighborhood[k]){
+			rel_avg_loc[0] += relative_pos[k][0];
+			rel_avg_loc[1] += relative_pos[k][1];
+			n_flockmates[0]++;
+		}
+		if(prev_neighborhood[k]){
+			rel_avg_speed[0] += relative_speed[k][0];
+			rel_avg_speed[1] += relative_speed[k][1];
+			n_flockmates[1]++;
+		}
 	}
 
-    /* Rule 2 - Dispersion/Separation: keep far enough from flockmates */
-    for (k=0;k<FLOCK_SIZE;k++) {
-        if (k != robot_id){ // Loop on flockmates only
-            // If neighbor k is too close (Euclidean distance)
-            if(pow(relative_pos[k][0],2)+pow(relative_pos[k][1],2) < RULE2_THRESHOLD){
-            	for (j=0;j<2;j++) {
-                	dispersion[j] -= 1/relative_pos[k][j]; // Relative distance to k
-                //printf("dispersion:%f, ", dispersion[j]);
-              	}
-            }
+    // Avoid division by zero
+    n_flockmates[0] = (n_flockmates[0]>0?n_flockmates[0]:1);
+    n_flockmates[1] = (n_flockmates[1]>0?n_flockmates[1]:1);
+    
+    printf("Robot %d: nb_flockmates %d & % d\n",robot_id,n_flockmates[0],n_flockmates[1]);
+    for(j=0;j<2;j++){
+       rel_avg_speed[j] /= n_flockmates[1];
+       rel_avg_loc[j]   /= n_flockmates[0];
+	}
+	
+	/* Rule 1 - Aggregation/Cohesion: move towards the center of mass */    
+    for (j=0;j<2;j++) 
+	{	
+		if (sqrt(pow(relative_pos[robot_id][0]-rel_avg_loc[0],2.0)+pow(relative_pos[robot_id][1]-rel_avg_loc[1],2.0)) > RULE1_THRESHOLD){
+            cohesion[j] = rel_avg_loc[j];
         }
-    }
-          
+	}
+
+	/* Rule 2 - Dispersion/Separation: keep far enough from flockmates */
+	for (k=0; k<FLOCK_SIZE;k++){
+		// dont consider yourself
+		if(k != robot_id){
+			// if flockmate is too close
+			if (sqrt(pow(relative_pos[robot_id][0]-relative_pos[k][0],2.0)+pow(relative_pos[robot_id][1]-relative_pos[k][1],2.0)) < RULE2_THRESHOLD){
+				for (j=0;j<2;j++){
+					//relative distance to kth flockmate
+					dispersion[j] += 1/(relative_pos[robot_id][j]);
+				}
+			}
+		}
+  	}
+
 	/* Rule 3 - Consistency/Alignment: match the speeds of flockmates */
-    for (j=0;j<2;j++) {
+	for (j=0;j<2;j++) {
+		// align with flock speed
 		consistency[j] = rel_avg_speed[j];
-		//printf("consistency\n");
+		// ALTERNATIVE, CHECK WHICH IS BETTER
+		//consistency[j] = rel_avg_speed[j];
+		
     }
 
     //aggregation of all behaviors with relative influence determined by weights
@@ -291,17 +310,16 @@ void reynolds_rules() {  //DANIEL TO ADD
         speed[robot_id][j] +=  dispersion[j]  * RULE2_WEIGHT;
         speed[robot_id][j] +=  consistency[j] * RULE3_WEIGHT;
     }
+    
     speed[robot_id][1] *= -1; //y axis of webots is inverted
-        
-    //move the robot according to some migration rule
     if(MIGRATORY_URGE == 0){
-        speed[robot_id][0] += 0.01*cos(my_position[2] + M_PI/2);
-        speed[robot_id][1] += 0.01*sin(my_position[2] + M_PI/2);
-    }
-    else {
-        speed[robot_id][0] += (migr[0]-my_position[0]) * MIGRATION_WEIGHT_X;
-        speed[robot_id][1] -= (migr[1]-my_position[1]) * MIGRATION_WEIGHT_Y; //y axis of webots is inverted
-    }
+          speed[robot_id][0] += 0.01*cos(my_position[2] + M_PI/2);
+          speed[robot_id][1] += 0.01*sin(my_position[2] + M_PI/2);
+        }
+        else {
+            speed[robot_id][0] += (migr[0]-my_position[0]) * MIGRATION_WEIGHT_Y;
+            speed[robot_id][1] -= (migr[1]-my_position[1]) * MIGRATION_WEIGHT_X; //y axis of webots is inverted
+        }	
 }
 
 
@@ -560,6 +578,8 @@ void set_speed_with_state(int* bmsl, int* bmsr, int* max_sens, int* sum_sensors)
 	if (maxDist < distances[i])
 		maxDist = distances[i];
   }
+
+  printf("asd\n");
   
   if(state == REYNOLDS_STATE){
 	if(REYNOLDS){
