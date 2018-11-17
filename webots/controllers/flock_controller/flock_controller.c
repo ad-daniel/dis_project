@@ -63,7 +63,7 @@
 /*FLAGS*/
 #define MIGRATORY_URGE 0 			// Disable/Enable the migration urge
 #define OBSTACLE_AVOIDANCE 0 		// Disable/Enable the obstacle avoidance
-#define REYNOLDS 1                  // Disable/Enable the Reynolds'rules
+#define REYNOLDS 0                  // Disable/Enable the Reynolds'rules
 #define LOCAL_COMMUNICATION 1		// Disable/Enable local communication between the epucks
 
 #define WRITE_REL_POS 1				// Disable/Enable the writing of relative position of the robot1's neighborhood
@@ -240,11 +240,12 @@ void compute_wheel_speeds(int *msl, int *msr)
 	/* Add the migratory urge shift */
 	if (MIGRATORY_URGE){
 		// Convert to wheel speeds
-		*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
-		*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
+		//*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) - MIGRATION_WEIGHT * migratory_diff;
+		//*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS) + MIGRATION_WEIGHT * migratory_diff;	
 	}
 	else{
 		// Convert to wheel speeds!
+		
 		*msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
 		*msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
 	}
@@ -336,8 +337,14 @@ void reynolds_rules() {
     }
     
     speed[robot_id][1] *= -1; //y axis of webots is inverted
-
-
+    if(MIGRATORY_URGE == 0){
+          speed[robot_id][0] += 0.01*cos(my_position[2] + M_PI/2);
+          speed[robot_id][1] += 0.01*sin(my_position[2] + M_PI/2);
+        }
+        else {
+            speed[robot_id][0] += (migr[0]-my_position[0]) * MIGRATION_WEIGHT;
+            speed[robot_id][1] -= (migr[1]-my_position[1]) * MIGRATION_WEIGHT; //y axis of webots is inverted
+        }
 
 
 }
@@ -352,21 +359,13 @@ void sim_write_relpos(int other_robot_id,int loop_time){
 
 	if(robot_id == 1){ // Write only for the robot1
   	printf("begin writing file\n");
-	if(!loop_time){
-		f = fopen(fname,"w"); // erase previous file
-	}
-	else{
-		f = fopen(fname,"a");
-	}
+	
+	f = fopen(fname,"a");
 	printf("writing file 1\n");
-  	if(!loop_time){
-  	// File header
-  	fprintf(f,"time_step\t neighbors_id\t x\t y\t theta\t \n");
-  	}
-  	else{
+
   	// Datas
-         fprintf(f,"%d\t %d\t %f\t %f\t %f\t\n",loop_time,other_robot_id,relative_pos[other_robot_id][0],relative_pos[other_robot_id][1],relative_pos[other_robot_id][2]);
-	}
+    fprintf(f,"%d\t %d\t %f\t %f\t %f\t %f\n",loop_time,other_robot_id,relative_pos[other_robot_id][0],relative_pos[other_robot_id][1],relative_pos[other_robot_id][2],(relative_pos[other_robot_id][2]/M_PI *180));
+
 	printf("writing file 2\n"); 
 	fclose(f);
 	}
@@ -413,8 +412,8 @@ void update_neighborhood_states(float range, float theta, int other_robot_id, in
 	prev_relative_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
 	prev_relative_pos[other_robot_id][2] = relative_pos[other_robot_id][2];
 	// Set relative location
-	relative_pos[other_robot_id][0] =  range * cos(theta);
-	relative_pos[other_robot_id][1] = -1.0 * range * sin(theta);
+	relative_pos[other_robot_id][0] =  range * cosf(theta);
+    	relative_pos[other_robot_id][1] =  range * sinf(theta);
 	relative_pos[other_robot_id][2] = theta;
 	
 	// writing function
@@ -441,24 +440,47 @@ void sim_receive_message(void)
 {
     const double *message_direction;
     double message_rssi; 	// Received Signal Strength indicator
-	double theta;
 	double range;
 	char* inbuffer;			// Buffer for the receiver node
     int other_robot_id;
     static int loop_time = 0;
+	
+	if(!loop_time && robot_id ==1){
+	FILE* f;
+	char fname[] = "../../../Simulation/robot_1.txt";			            // file name can be changed
+	f = fopen(fname,"w"); // erase previous file
+  	// File header
+  	fprintf(f,"time_step\t neighbors_id\t x\t y\t theta\t deg_theta\t\n");
+  	fclose(f);
+  	}
 	while (wb_receiver_get_queue_length(receiver2) > 0) {
 		inbuffer = (char*) wb_receiver_get_data(receiver2);
 		message_direction = wb_receiver_get_emitter_direction(receiver2);
-		message_rssi = wb_receiver_get_signal_strength(receiver2);
-		double y = message_direction[2];
-		double x = message_direction[1];
+            	message_rssi = wb_receiver_get_signal_strength(receiver2);
 
-        theta =	-atan2(y,x);
-        theta = theta + my_position[2]; // find the relative theta;
-		range = sqrt((1/message_rssi));
-		
 		// since the name of the sender is in the received message. Note: this does not work for robots having id bigger than 9!
 		other_robot_id = (int)(inbuffer[5]-'0'); 
+            	range = sqrt((1/message_rssi));
+
+		/*//Check all the angles
+		double x = message_direction[0];
+		double y = message_direction[1];
+		double z = message_direction[2];
+		
+                  double theta1 =	atan2(y,x)/M_PI *180;
+                  double theta2 =	atan2(z,x)/M_PI *180;
+                  double theta3 =	atan2(y,z)/M_PI *180;
+                  
+                  if(robot_id ==1){
+                    printf("id: %d, x: %f, y: %f, z: %f, thetaXY: %f, thetaXZ: %f,thetaZY: %f\n",other_robot_id,x,y,z,theta1, theta2, theta3);
+                  }*/
+                  double x = message_direction[1];
+                  double y = message_direction[2];
+                  double theta = atan2(x,y);
+
+                  theta = (theta<0?2*M_PI+theta:theta); // theta between [0;2*PI];
+
+		
 		//Check if in IR physical range
 		if(range<=MAX_COMMUNICATION_DIST){
 			update_neighborhood_states(range, theta, other_robot_id, loop_time);
