@@ -21,7 +21,7 @@
 
 #include <webots/emitter.h>
 
-#define FLOCK_SIZE	4 		// Number of robots in flock
+#define FLOCK_SIZE	5 		// Number of robots in flock
 #define TIME_STEP	64		// [ms] Length of time step
 #define VMAX        0.1287
 
@@ -29,7 +29,7 @@ WbNodeRef robs[FLOCK_SIZE];		// Robots nodes
 WbFieldRef robs_trans[FLOCK_SIZE];	// Robots translation fields
 WbFieldRef robs_rotation[FLOCK_SIZE];	// Robots rotation fields
 WbDeviceTag receiver;
-WbDeviceTag emitter; //Mathilde
+//WbDeviceTag emitter; //Mathilde
 
 float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
 
@@ -50,7 +50,7 @@ int t;
 void reset(void) {
 	wb_robot_init();
 	
-	emitter = wb_robot_get_device("emitter"); //Mathilde
+	//emitter = wb_robot_get_device("emitter"); //Mathilde
 
 
 	char rob[7] = "epuck0";
@@ -133,11 +133,14 @@ int main(int argc, char *args[]) {
 	float fit_cohesion;			// Performance metric for cohesion
 	float fit_orientation;			// Performance metric for orientation
 	float fit_velocity;
-	float performance;
+	float performance; 
 	
 	//Mathilde	
 	//char message[128];
-			
+	FILE *fp = NULL;
+	int nb_repetition = 0; //find a way to count nb of simulation with the same parameters
+	
+	 
 	for(;;) {
 		wb_robot_step(TIME_STEP);
 		
@@ -154,17 +157,28 @@ int main(int argc, char *args[]) {
 	  		performance = fit_orientation * fit_cohesion * fit_velocity;
 			printf("time:%d :: orient: %f :: cohes : %f :: veloc : %f ::: performance %f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
 			
+			//Mathilde
+			nb_repetition += 1; 
+			fp = fopen("Reynolds_performance.csv" ,"a");
+			//if(t==0){
+                                 //   fprintf(fp, "Simulation n° \n");
+			//}
+  			//fprintf(fp, "time,%d,orient,%f,cohes,%f,veloc,%f,performance,%f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);
+            		fprintf(fp, "%d,%d,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance);
+            
+            		fclose(fp);
 		}
 
 		if(t==40000){
-  		printf("Test crash\n");
+  		//printf("Test crash\n");
               	  //sprintf(message, "hello%d", i);
                         //wb_emitter_send(emitter, message, strlen(message) + 1);
-                        t = 0; 
+                        //t = 0; 
                         wb_supervisor_world_reload();
                       }
                       
                       t += TIME_STEP;
+                      
 	}
          // wb_supervisor_simulation_revert()
 }

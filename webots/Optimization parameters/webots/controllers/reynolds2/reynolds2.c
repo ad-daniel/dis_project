@@ -29,7 +29,7 @@
 /*Webots 2018b*/
 #define MAX_SPEED_WEB      6.28    // Maximum speed webots
 /*Webots 2018b*/
-#define FLOCK_SIZE	  4	  // Size of flock
+#define FLOCK_SIZE	  5	  // Size of flock
 #define TIME_STEP	  64	  // [ms] Length of time step
 
 #define AXLE_LENGTH 		0.052	// Distance between wheels of robot (meters)
@@ -347,7 +347,7 @@ int main(){
 	int t; //Mathilde
 	
  	reset();			// Resetting the robot
-           	t=0; char *message; //Mathilde
+           //	t=0; char *message; //Mathilde
 
 	msl = 0; msr = 0; 
 	max_sens = 0; 
@@ -436,7 +436,7 @@ int main(){
 		//wb_differential_wheels_set_speed(msl,msr);
 		/*Webots 2018b*/
     
-    		t += TIME_STEP; // Mathilde
+    		//t += TIME_STEP; // Mathilde
 		// Continue one step
 		wb_robot_step(TIME_STEP);
 	}
