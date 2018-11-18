@@ -126,7 +126,7 @@ static void reset()
 		initialized[i] = 0;		  // Set initialization to 0 (= not yet initialized)
 	}
   
-        printf("Reset: robot %d\n",robot_id_u);
+        //printf("Reset: robot %d\n",robot_id_u);
         
         migr[0] = 25;
         migr[1] = -25;
