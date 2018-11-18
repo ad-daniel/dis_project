@@ -144,7 +144,7 @@ int main(int argc, char *args[]) {
 			//Compute and normalize fitness values
 			compute_performance(&fit_orientation, &fit_cohesion, & fit_velocity);
 	  		performance = fit_orientation * fit_cohesion * fit_velocity;
-			printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: performance %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
+			//printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: performance %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
 			
 		}
 		
