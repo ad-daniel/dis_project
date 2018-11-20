@@ -29,14 +29,9 @@ WbDeviceTag receiver;
 
 float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
 
-#define RULE1_THRESHOLD 0.2
-#define fit_cluster_ref 0.03
-#define fit_orient_ref 1.0
-
-
 int offset;				// Offset of robots number
-float migrx = 3;
-float migrz = 0;			// Migration vector
+float migrx = 0;
+float migrz = -3;			// Migration vector
 float orient_migr; 			// Migration orientation
 int t;
 
@@ -144,7 +139,7 @@ int main(int argc, char *args[]) {
 			//Compute and normalize fitness values
 			compute_performance(&fit_orientation, &fit_cohesion, & fit_velocity);
 	  		performance = fit_orientation * fit_cohesion * fit_velocity;
-			printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: performance %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
+			//printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: performance %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
 			
 		}
 		

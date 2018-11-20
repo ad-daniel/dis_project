@@ -533,18 +533,18 @@ DEF epuck0 E-puck {
   rotation 0 1 0 -1.5700000000112309
   name "epuck0"
   controller "flock_controller"
-  emitter_channel 0
-  receiver_channel 0
   groundSensorsSlot [
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
     Emitter {
       name "emitter2"
       type "infra-red"
       channel 1
     }
-    Receiver {
-      name "receiver2"
-      type "infra-red"
-      channel 1
+    Compass {
     }
   ]
 }
@@ -555,18 +555,18 @@ DEF epuck1 E-puck {
   rotation 0 1 0 -1.5700000000112309
   name "epuck1"
   controller "flock_controller"
-  emitter_channel 0
-  receiver_channel 0
   groundSensorsSlot [
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
     Emitter {
       name "emitter2"
       type "infra-red"
       channel 1
     }
-    Receiver {
-      name "receiver2"
-      type "infra-red"
-      channel 1
+    Compass {
     }
   ]
 }
@@ -577,18 +577,18 @@ DEF epuck2 E-puck {
   rotation 0 1 0 -1.5700000000112309
   name "epuck2"
   controller "flock_controller"
-  emitter_channel 0
-  receiver_channel 0
   groundSensorsSlot [
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
     Emitter {
       name "emitter2"
       type "infra-red"
       channel 1
     }
-    Receiver {
-      name "receiver2"
-      type "infra-red"
-      channel 1
+    Compass {
     }
   ]
 }
@@ -599,18 +599,18 @@ DEF epuck3 E-puck {
   rotation 0 1 0 -1.5700000000112309
   name "epuck3"
   controller "flock_controller"
-  emitter_channel 0
-  receiver_channel 0
   groundSensorsSlot [
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
     Emitter {
       name "emitter2"
       type "infra-red"
       channel 1
     }
-    Receiver {
-      name "receiver2"
-      type "infra-red"
-      channel 1
+    Compass {
     }
   ]
 }
@@ -621,18 +621,18 @@ DEF epuck4 E-puck {
   rotation 0 1 0 -1.5700000000112309
   name "epuck4"
   controller "flock_controller"
-  emitter_channel 0
-  receiver_channel 0
   groundSensorsSlot [
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
     Emitter {
       name "emitter2"
       type "infra-red"
       channel 1
     }
-    Receiver {
-      name "receiver2"
-      type "infra-red"
-      channel 1
+    Compass {
     }
   ]
 }

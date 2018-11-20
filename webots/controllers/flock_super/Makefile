@@ -2,8 +2,8 @@
 ### window libraries, remote control libraries and other libraries
 ### to be used with GNU make
 ###
-### Platforms: Windows, Mac OS X, Linux
-### Languages: C, C++, Java
+### Platforms: Windows, macOS, Linux
+### Languages: C, C++
 ###
 ### Authors: Olivier Michel, Yvan Bourquin, Fabien Rohrer
 ###          Edmund Ronald, Sergei Poskriakov
@@ -36,11 +36,20 @@
 ### INCLUDE = -I"/my_library_path/include"
 ### LIBRARIES = -L"/path/to/my/library" -lmy_library -lmy_other_library
 ###
-### --- Webots included libraries ---
-### In your C++ program, if you want to use the C API, add
+### ---- Linking options ----
+### if special linking flags are needed:
+### LFLAGS = -s
+###
+### ---- Webots included libraries ----
+### if you want to use the Webots C API in your C++ controller program:
 ### USE_C_API = true
-### or if you want to link with the Qt framework embedded in Webots:
+### if you want to link with the Qt framework embedded in Webots:
 ### QT = core gui widgets network
+###
+### ---- Debug mode ----
+### if you want to display the gcc command line for compilation and link, as
+### well as the rm command details used for cleaning:
+### VERBOSE = 1
 ###
 ###-----------------------------------------------------------------------------
 
