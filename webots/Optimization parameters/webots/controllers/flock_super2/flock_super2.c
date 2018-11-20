@@ -29,7 +29,7 @@ WbNodeRef robs[FLOCK_SIZE];		// Robots nodes
 WbFieldRef robs_trans[FLOCK_SIZE];	// Robots translation fields
 WbFieldRef robs_rotation[FLOCK_SIZE];	// Robots rotation fields
 WbDeviceTag receiver;
-//WbDeviceTag emitter; //Mathilde
+WbDeviceTag emitter; //Mathilde
 
 float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
 
@@ -52,7 +52,7 @@ double **data_line;
 void reset(void) {
 	wb_robot_init();
 	
-	//emitter = wb_robot_get_device("emitter"); //Mathilde
+	emitter = wb_robot_get_device("emitter"); //Mathilde
 
 
 	char rob[7] = "epuck0";
@@ -65,7 +65,6 @@ void reset(void) {
 	}
 
 	printf("Reset supervisor\n");
-
 }
 
 
@@ -131,7 +130,6 @@ void read_csv(int row, int col, char *filename, double **data){
   char line[4098];
   while (fgets(line, 4098, file) && (i < row))
   {
-    // double row[ssParams->nreal + 1];
     char* tmp = strdup(line);
     int j = 0;
     const char* tok;
@@ -172,20 +170,19 @@ void handle_line_csv(FILE *line_to_read, int action, double line, double **data_
   char *name = "Line_to_read.csv";
   
   if(action == read){
-    //printf("Step1\n");
     line_to_read = fopen(name,"r");
     //printf("Step2\n");
     read_csv(1,1,name, data_l);
-    //printf("Step3\n");
   }else if(action==create){
+  printf("line number init %f\n", line );
     line_to_read = fopen(name,"w");
-    fprintf(line_to_read, "%f,\n", line);
+    data_line[0][0] = line; 
+    //fprintf(line_to_read, "%f,\n", line);
     read_csv(1,1,name, data_l);
   }else if(action==rewrite){
     line_to_read = fopen(name,"w");
-    fprintf(line_to_read, "%f,\n", line);
-  }
-  
+    fprintf(line_to_read, "%f\n", line);
+  }  
   fclose(line_to_read);  
 }
 
@@ -203,7 +200,7 @@ void test_param(FILE *params, FILE *line_to_read){
   
   char *file_name;
   char str[60];
-  //char* weight =  "WEIGHT1";
+  char message[255]; 
     
   /* Indice param, init, resol and final to be changed manually to give the parameter and its range */  
   int indice_param = 1; //1 for WEIGHT1; 2 for WEIGHT2 etc...
@@ -223,6 +220,21 @@ void test_param(FILE *params, FILE *line_to_read){
   data_line = (double **)malloc(1 * sizeof(double *));
   for (int i = 0; i < 1; ++i){
     data_line[i] = (double *)malloc(1 * sizeof(double));
+  }
+  
+  //Create or read file that contains the line we need to read next
+  if((line_to_read = fopen("Line_to_read.csv", "r"))){
+    printf("Ready to read line file\n");
+    int read = 0; 
+    handle_line_csv(line_to_read, read, 0, data_line);
+    //printf("data line value is : %f\n", data_line[0][0]);
+    fclose(line_to_read);
+  }else{
+    int create = 1; 
+    printf("Creating line file\n"); 
+    handle_line_csv(line_to_read, create, (double) line, data_line);
+    //printf("data line value after init is : %f\n", data_line[0][0]);
+    fclose(line_to_read);
   }
   
   //Depending on the existence of the file, read or create + read it, and extract parameters usefull for the current simulation  
@@ -251,19 +263,16 @@ void test_param(FILE *params, FILE *line_to_read){
     }
     read_csv(row, col, file_name, data_glob);
     fclose(params);
-  } 
+  }   
   
-    //Create or read file that contains the line we need to read next
-  if((line_to_read = fopen("Line_to_read.csv", "r"))){
-    printf("Ready to read line file\n");
-    int read = 0; 
-    handle_line_csv(line_to_read, read, 0, data_line);
-    fclose(line_to_read);
-  }else{
-    int create = 1; 
-    handle_line_csv(line_to_read, create, (double) line, data_line);
-    fclose(line_to_read);
-  }
+  //Send to the robot controller
+  int lp = (int)data_line[0][0];
+  printf("Param to be sent %.3f,%.3f,%.3f,%.3f,%.3f\n", data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3], data_glob[lp][4]);
+  sprintf(message, "%.3f%.3f%.3f%.3f%.3f\n", data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3], data_glob[lp][4]);
+  //printf("%s\n", message);
+  wb_emitter_send(emitter, message, strlen(message) + 1);
+  printf("actual line %f\n", data_line[0][0]);
+  
 }
 
 
@@ -319,17 +328,13 @@ int main(int argc, char *args[]) {
 		}
 
 		if(t==40000){
-              	  //sprintf(message, "hello%d", i);
-                        //wb_emitter_send(emitter, message, strlen(message) + 1);
+
                         printf("Exit condition\n");
-                        printf("%f\n", data_line[0][0]);
-                        printf("%f\n", data_glob[0][0]);
                         if(data_line[0][0] <= data_glob[0][0]-1){
                           data_line[0][0] += 1;
+                          printf("next line number is %f\n", data_line[0][0]);
                           int action = 2; 
                           handle_line_csv(line_to_read, action, data_line[0][0], data_line);
-                          printf("Ready to restart\n");
-                          //printf("%f\n", data[0][0]);
                           wb_supervisor_world_reload();
                         }else{
                           //wb_supervisor_simulation_quit();

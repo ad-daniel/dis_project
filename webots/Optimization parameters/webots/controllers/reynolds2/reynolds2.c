@@ -57,18 +57,12 @@ WbDeviceTag left_motor; //handler for left wheel of the robot
 WbDeviceTag right_motor; //handler for the right wheel of the robot
 /*Webots 2018b*/
 
-/*Weights for Reynolds' declared as global variables to be able to test differents parameters*/
-//float RULE1_WEIGHT; 
-//float RULE2_WEIGHT; 
-//float RULE3_WEIGHT; 
-//float MIGRATION_WEIGHT; 
-
 int e_puck_matrix[16] = {17,29,34,10,8,-38,-56,-76,-72,-58,-36,8,10,36,28,18}; // for obstacle avoidance
-
 
 WbDeviceTag ds[NB_SENSORS];	// Handle for the infrared distance sensors
 WbDeviceTag receiver2;		// Handle for the receiver node
 WbDeviceTag emitter2;		// Handle for the emitter node
+WbDeviceTag receiver3;
 
 int robot_id_u, robot_id;	// Unique and normalized (between 0 and FLOCK_SIZE-1) robot ID
 
@@ -89,11 +83,13 @@ float theta_robots[FLOCK_SIZE];
  */
 static void reset() 
 {
+           char *inbuffer;
 	wb_robot_init();
 
 
 	receiver2 = wb_robot_get_device("receiver2");
 	emitter2 = wb_robot_get_device("emitter2");
+	receiver3 = wb_robot_get_device("receiver3");
 	
 	/*Webots 2018b*/
 	//get motors
@@ -116,7 +112,8 @@ static void reset()
           wb_distance_sensor_enable(ds[i],64);
 
 	wb_receiver_enable(receiver2,64);
-
+	wb_receiver_enable(receiver3, 64); 
+	
 	//Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
 	sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
 	robot_id = robot_id_u%FLOCK_SIZE;	  // normalize between 0 and FLOCK_SIZE-1
@@ -124,6 +121,28 @@ static void reset()
 	for(i=0; i<FLOCK_SIZE; i++) 
 	{
 		initialized[i] = 0;		  // Set initialization to 0 (= not yet initialized)
+	}
+	
+	//int rob_nb;
+	
+	//while (initialized[robot_id] == 0) {
+              // wait for message
+              float weight1; float weight2; float weight3; float weightX; float weightY; 
+            while (wb_receiver_get_queue_length(receiver3) == 0)	wb_robot_step(TIME_STEP);
+              while(wb_receiver_get_queue_length(receiver3) > 0){
+                inbuffer = (char*) wb_receiver_get_data(receiver3);
+                //printf("%s\n", inbuffer);
+                sscanf(inbuffer,"%f%f%f%f%f\n",&weight1,&weight2,&weight3,&weightX,&weightY);
+                printf("%.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
+              //sscanf(inbuffer,"%d#%f#%f#%f##%f#%f",&rob_nb,&rob_x,&rob_z,&rob_theta, &migr[0], &migr[1]);
+              //robot_nb %= FLOCK_SIZE;
+              //if(rob_nb == robot_id) 
+              //{
+              printf("initializing\n");
+              //  initialized[rob_nb] = 1; 		// initialized = true
+              //  }
+              //printf("initializing\n");
+		wb_receiver_next_packet(receiver3);
 	}
   
         //printf("Reset: robot %d\n",robot_id_u);
