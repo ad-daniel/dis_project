@@ -76,6 +76,7 @@ WbDeviceTag ds[NB_SENSORS];	// Handle for the infrared distance sensors
 WbDeviceTag receiver2;		// Handle for the receiver node
 WbDeviceTag emitter2;		// Handle for the emitter node
 WbDeviceTag compass;
+WbDeviceTag receiver3;
 
 int robot_id_u, robot_id;	// Unique and normalized (between 0 and FLOCK_SIZE-1) robot ID
 int robot_flock_id;
@@ -100,6 +101,7 @@ bool flockmates[FLOCK_SIZE] = {0};
 static void reset() 
 {
 	int i;
+  	char *inbuffer; //Mathilde
 
 	wb_robot_init();
 
@@ -108,6 +110,7 @@ static void reset()
 
 	receiver2 = wb_robot_get_device("receiver2");
 	emitter2 = wb_robot_get_device("emitter2");
+	receiver3 = wb_robot_get_device("receiver3"); //Mathilde
 	
 	//get motors
 	left_motor = wb_robot_get_device("left wheel motor");
@@ -125,7 +128,21 @@ static void reset()
 	for(i=0;i<NB_SENSORS;i++){
 		  wb_distance_sensor_enable(ds[i],64);
 	}
-	wb_receiver_enable(receiver2,64);
+	wb_receiver_enable(receiver2, 64);
+	wb_receiver_enable(receiver3, 64); //Mathilde 
+
+    float weight1; float weight2; float weight3; float weightX; float weightY; 
+
+    while(wb_receiver_get_queue_length(receiver3) > 0){
+        inbuffer = (char*) wb_receiver_get_data(receiver3);
+        //printf("%s\n", inbuffer);
+        sscanf(inbuffer,"%f#%f#%f#%f#%f\n",&weight1,&weight2,&weight3,&weightX,&weightY);
+        //printf("%.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
+        //printf("initializing\n");
+        wb_receiver_next_packet(receiver3);
+    }
+    printf("Received from supervisor: %.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
+
 
 	//Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
 	sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
