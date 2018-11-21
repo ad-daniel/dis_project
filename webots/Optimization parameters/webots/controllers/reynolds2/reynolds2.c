@@ -83,72 +83,60 @@ float theta_robots[FLOCK_SIZE];
  */
 static void reset() 
 {
-           char *inbuffer;
-	wb_robot_init();
-
-
-	receiver2 = wb_robot_get_device("receiver2");
-	emitter2 = wb_robot_get_device("emitter2");
-	receiver3 = wb_robot_get_device("receiver3");
-	
-	/*Webots 2018b*/
-	//get motors
-          left_motor = wb_robot_get_device("left wheel motor");
-          right_motor = wb_robot_get_device("right wheel motor");
-          wb_motor_set_position(left_motor, INFINITY);
-          wb_motor_set_position(right_motor, INFINITY);
-          /*Webots 2018b*/
-	
-	
-	int i;
-	char s[4]="ps0";
-	for(i=0; i<NB_SENSORS;i++) {
-		ds[i]=wb_robot_get_device(s);	// the device name is specified in the world file
-		s[2]++;			// increases the device number
-	}
-	robot_name=(char*) wb_robot_get_name(); 
-
-	for(i=0;i<NB_SENSORS;i++)
-          wb_distance_sensor_enable(ds[i],64);
-
-	wb_receiver_enable(receiver2,64);
-	wb_receiver_enable(receiver3, 64); 
-	
-	//Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
-	sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
-	robot_id = robot_id_u%FLOCK_SIZE;	  // normalize between 0 and FLOCK_SIZE-1
+  char *inbuffer; //Mathilde
+  wb_robot_init();
   
-	for(i=0; i<FLOCK_SIZE; i++) 
-	{
-		initialized[i] = 0;		  // Set initialization to 0 (= not yet initialized)
-	}
-	
-	//int rob_nb;
-	
-	//while (initialized[robot_id] == 0) {
-              // wait for message
-              float weight1; float weight2; float weight3; float weightX; float weightY; 
-            while (wb_receiver_get_queue_length(receiver3) == 0)	wb_robot_step(TIME_STEP);
-              while(wb_receiver_get_queue_length(receiver3) > 0){
-                inbuffer = (char*) wb_receiver_get_data(receiver3);
-                //printf("%s\n", inbuffer);
-                sscanf(inbuffer,"%f%f%f%f%f\n",&weight1,&weight2,&weight3,&weightX,&weightY);
-                printf("%.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
-              //sscanf(inbuffer,"%d#%f#%f#%f##%f#%f",&rob_nb,&rob_x,&rob_z,&rob_theta, &migr[0], &migr[1]);
-              //robot_nb %= FLOCK_SIZE;
-              //if(rob_nb == robot_id) 
-              //{
-              printf("initializing\n");
-              //  initialized[rob_nb] = 1; 		// initialized = true
-              //  }
-              //printf("initializing\n");
-		wb_receiver_next_packet(receiver3);
-	}
+  receiver2 = wb_robot_get_device("receiver2");
+  emitter2 = wb_robot_get_device("emitter2");
+  receiver3 = wb_robot_get_device("receiver3"); //Mathilde
   
-        //printf("Reset: robot %d\n",robot_id_u);
-        
-        migr[0] = 25;
-        migr[1] = -25;
+  /*Webots 2018b*/
+  //get motors
+  left_motor = wb_robot_get_device("left wheel motor");
+  right_motor = wb_robot_get_device("right wheel motor");
+  wb_motor_set_position(left_motor, INFINITY);
+  wb_motor_set_position(right_motor, INFINITY);
+  /*Webots 2018b*/
+  
+  int i;
+  char s[4]="ps0";
+  for(i=0; i<NB_SENSORS;i++) {
+      ds[i]=wb_robot_get_device(s);	// the device name is specified in the world file
+      s[2]++;			// increases the device number
+   }
+   
+   robot_name=(char*) wb_robot_get_name(); 
+   for(i=0;i<NB_SENSORS;i++)
+   wb_distance_sensor_enable(ds[i],64);
+   
+   wb_receiver_enable(receiver2,64);
+   wb_receiver_enable(receiver3, 64); //Mathilde 
+   
+   //Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
+    sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
+    robot_id = robot_id_u%FLOCK_SIZE;	  // normalize between 0 and FLOCK_SIZE-1
+  
+    for(i=0; i<FLOCK_SIZE; i++) 
+    {
+        initialized[i] = 0;		  // Set initialization to 0 (= not yet initialized)
+    }
+    
+    //while (initialized[robot_id] == 0) {      //Mathilde
+    // wait for message
+    float weight1; float weight2; float weight3; float weightX; float weightY; 
+    while (wb_receiver_get_queue_length(receiver3) == 0)	wb_robot_step(TIME_STEP);
+        while(wb_receiver_get_queue_length(receiver3) > 0){
+            inbuffer = (char*) wb_receiver_get_data(receiver3);
+            //printf("%s\n", inbuffer);
+            sscanf(inbuffer,"%f%f%f%f%f\n",&weight1,&weight2,&weight3,&weightX,&weightY);
+            //printf("%.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
+            //printf("initializing\n");
+            wb_receiver_next_packet(receiver3);
+    }
+    printf("%.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
+  
+    migr[0] = 25;
+    migr[1] = -25;
 }
 
 
@@ -362,40 +350,15 @@ int main(){
 	int i;				// Loop counter
 	int distances[NB_SENSORS];	// Array for the distance sensor readings
 	int max_sens;			// Store highest sensor value
-	
-	int t; //Mathilde
+
 	
  	reset();			// Resetting the robot
-           //	t=0; char *message; //Mathilde
 
 	msl = 0; msr = 0; 
 	max_sens = 0; 
 	
 	// Forever
 	for(;;){
-            
-           // if(t==40000){ //Mathilde
-            //printf("inside restart simulation\n");
-            //  reset();
-            //  t=0;
-              //for(j=0; j<FLOCK_SIZE; j++){
-            //    for(i=0; i<3; i++){
-            //      my_position[i] -= my_position[i]; 
-            //    }
-              //}
-             // msl = 0; msr = 0; 
-            //  max_sens = 0; 
-            //}
-            
-            //if(t==40000){
-            // wait for message
-              //while (wb_receiver_get_queue_length(receiver2) > 0){
-              //  message = (char*) wb_receiver_get_data(receiver2);
-                //sscanf(inbuffer,"%d#%f#%f#%f##%f#%f",&rob_nb,&rob_x,&rob_z,&rob_theta, &migr[0], &migr[1]);
-               // sscanf(message, "%c", message );
-             // }
-	//}
-            
               bmsl = 0; bmsr = 0;
               sum_sensors = 0;
               max_sens = 0;
@@ -454,8 +417,7 @@ int main(){
                       wb_motor_set_velocity(right_motor, msr_w);
 		//wb_differential_wheels_set_speed(msl,msr);
 		/*Webots 2018b*/
-    
-    		//t += TIME_STEP; // Mathilde
+
 		// Continue one step
 		wb_robot_step(TIME_STEP);
 	}

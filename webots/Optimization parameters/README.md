@@ -12,13 +12,20 @@ Improvments to be done :
 
 # How to implement parameters optimization on your supervisor
 
-## On the supervisor controller
+## On the supervisor controller flock_super2.c
 
 l.11 : #define _GNU_SOURCE (need to be before including <stdio.h>
-l.46 : declare global pointer data
-l.121 : function read_csv 
-l.151 : function handle_line_csv
-l.181 : function test_param(params)
-l.273 to 280 : main, param to declare and fuction calling
-l.300 to 325 : calculation of performance and update of the line to be read, 
+l.32 : WbDeviceTag emitter;
+l.46/47: declare global pointer data_glob and data_line
+l.118 : function read_csv 
+l.146 : function handle_line_csv
+l.174 : function test_param(params)
+l.280 to 286 : main, param to declare and fuction calling
+l.307 to 325 : calculation of performance and update of the line to be read, 
 	+ writting onto param file + gestion of simulation reloading.
+	
+	Do a search, "Mathilde", to find more easily.
+	
+## On the controller controller reynolds2.c
+
+l.86, 91, 113, 124 to 136.

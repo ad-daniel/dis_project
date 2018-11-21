@@ -43,7 +43,7 @@ float migrx = 25;
 float migrz = -25;			// Migration vector
 float orient_migr; 			// Migration orientation
 int t;
-double **data_glob;
+double **data_glob;//Mathilde
 double **data_line;
 
 /*
@@ -66,8 +66,6 @@ void reset(void) {
 
 	printf("Reset supervisor\n");
 }
-
-
 
 
 /*
@@ -139,21 +137,7 @@ void read_csv(int row, int col, char *filename, double **data){
       //printf("%.3f\t\t", data[i][j]);
       //printf("%s", tok);
     }
-    //printf("\n");
     free(tmp);
-    
-    //Send parameters to the epucks TRY TO IMPLEMENT WHILE ACCESSING REMOTLY TO CUSTOM DATA OF ROBOT 
-    //const char *wb_robot_set_custom_data();
-    //WbFieldRef wb_supervisor_node_get_field(WbNodeRef node, const char *field_name);
-    //void wb_supervisor_field_set_sf_vec3f(WbFieldRef field, const double values[3]); 
-    //char rob[7] = "epuck0";
-    //for (i=0;i<FLOCK_SIZE;i++) {
-    //  rob[i] = wb_supervisor_node_get_from_def(rob);
-    //  WbFieldRef wb_supervisor_node_get_field(WbNodeRef node, const char *field_name);
-    //  robs_trans[i] = wb_supervisor_node_get_field(robs[i],"translation");
-    //  robs_rotation[i] = wb_supervisor_node_get_field(robs[i],"rotation");
-    //}
-    
     i++;
   }
   fclose(file);
@@ -294,7 +278,6 @@ int main(int argc, char *args[]) {
 	float performance; 
 	
 	//Mathilde	
-	//char message[128];
 	FILE *fp = NULL;
 	FILE *fparam = NULL; 
 	FILE *line_to_read = NULL; 
