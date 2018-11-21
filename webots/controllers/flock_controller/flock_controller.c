@@ -212,26 +212,60 @@ void reynolds_rules() {
 	float dispersion[2] = {0,0};
 	float consistency[2] = {0,0};
 	
+	int n_flockmates = 0;
+	float dist = 0.0;
+
+	
 	// Compute averages over the whole flock
-	for (j=0;j<2;j++) {
-		rel_avg_speed[j] = 0;
-		rel_avg_loc[j] = 0;
+	for(k=0;k<FLOCK_SIZE;k++){
+		if(k == robot_id){
+			continue;
+		}
+
+		for (j=0;j<2;j++) {
+			if(flockmates[k]){
+				rel_avg_speed[j] += relative_pos[k][j];
+				rel_avg_loc[j] += relative_pos[k][j];
+				n_flockmates++;
+			}
+		}
 	}
 	
-	
+	for(j=0;j<2;j++){
+		if(n_flockmates>0){
+			rel_avg_speed[j] /= n_flockmates;
+			rel_avg_loc[j] /= n_flockmates;
+		}
+		else{
+			return; // no flockmates, no raynolds to be done
+		}
+	}
+
 	// Rule 1 - Aggregation/Cohesion: move towards the center of mass
+	dist = sqrt(rel_avg_loc[0]*rel_avg_loc[0] + rel_avg_loc[1]*rel_avg_loc[1]);
 	for (j=0;j<2;j++){	
-		cohesion[j] = 0;
+		if(dist > RULE1_THRESHOLD){
+			cohesion[j] = rel_avg_loc[j];
+		}
 	}
 
 	// Rule 2 - Dispersion/Separation: keep far enough from flockmates
-	for (j=0;j<2;j++) {
-		dispersion[j] = 0;
-	}
+	for(k=0;k<FLOCK_SIZE;k++){
+		if(k == robot_id){
+			continue;
+		}
+
+		dist = sqrt(relative_pos[k][0]*relative_pos[k][0] + relative_pos[k][1]*relative_pos[k][1]);
+		if(dist < RULE2_THRESHOLD && flockmates[k]){
+			for (j=0;j<2;j++) {
+				dispersion[j] -= 1.0/(relative_pos[k][j]);
+			}
+		}
+	}	
   
 	// Rule 3 - Consistency/Alignment: match the speeds of flockmates
-	for (j=0;j<2;j++) {
-		consistency[j] = 0;
+	for (j=0;j<2;j++){
+		consistency[j] = rel_avg_speed[j];
 	}
 
 	//aggregation of all behaviors with relative influence determined by weights
@@ -242,18 +276,6 @@ void reynolds_rules() {
 	}
 	
 	speed[robot_id][1] *= -1; //y axis of webots is inverted
-	
-	/*        
-	//move the robot according to some migration rule
-	if(MIGRATORY_URGE == 0){
-	  speed[robot_id][0] += 0.01*cos(my_position[2] + M_PI/2);
-	  speed[robot_id][1] += 0.01*sin(my_position[2] + M_PI/2);
-	}
-	else {
-		speed[robot_id][0] += (migr[0]-my_position[0]) * MIGRATION_WEIGHT;
-		speed[robot_id][1] -= (migr[1]-my_position[1]) * MIGRATION_WEIGHT; //y axis of webots is inverted
-	}
-	*/
 }
 
 /*
@@ -342,7 +364,7 @@ double get_bearing(WbDeviceTag tag) {
 /*Added by Pauline*/
 float set_final_speed(int b_speed, int r_speed, int m_speed, int max_sens) {  //weights for each of the speed (wb: Braitenberg, wm: Migration, wr: Reynolds)
   float wb, wm, wr;
-  float final speed;
+  float final_speed;
   
   //wb prop to max_sens    and    wr = REYN_MIGR_RATIO * wm    and    wr + wb + wm = 1
   wb = (max_sens - MIN_SENS)/(MAX_SENS - MIN_SENS); 
@@ -351,7 +373,7 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int max_sens) {  //
   
   final_speed = wb * b_speed + wm * m_speed + wr * r_speed;
   
-  return final_speed; 
+  return (int) final_speed; 
 }
 
 
@@ -360,6 +382,7 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int max_sens) {  //
 int main(){ 
 	int i;							// Loop counter
 	int msl, msr;					// Wheel speeds
+	int rmsl, rmsr;
 	float msl_w, msr_w;
 	int bmsl, bmsr, sum_sensors;	// Braitenberg parameters
 	int distances[NB_SENSORS];		// Array for the distance sensor readings
@@ -367,9 +390,7 @@ int main(){
 	//float wb, wm, wr;                   
 	reset();						// Resetting the robot
 
-	msl = 0; msr = 0; 
-	bmsl = 0;  bmsr = 0; sum_sensors = 0;
-	max_sens = 0; 
+	msl = 0; msr = 0;
 	
 	/* Added by Pauline
 	//First, e-puck form a Flock: implement when main is already done
@@ -386,6 +407,7 @@ int main(){
 		// reset flockmates list. It's populated by sim_receive_message
 		for(i=0;i<FLOCK_SIZE;i++){flockmates[i] = 0;}
 
+		rmsl = 0; rmsr = 0; 
 		bmsl = 0; bmsr = 0;
 		sum_sensors = 0;
 		max_sens = 0;
@@ -417,14 +439,14 @@ int main(){
 		
 		sim_receive_message();
 
-		speed[robot_id][0] = (1/DELTA_T)*(my_position[0]-prev_my_position[0]);
-		speed[robot_id][1] = (1/DELTA_T)*(my_position[1]-prev_my_position[1]);
+		//speed[robot_id][0] = (1/DELTA_T)*(my_position[0]-prev_my_position[0]);
+		//speed[robot_id][1] = (1/DELTA_T)*(my_position[1]-prev_my_position[1]);
 	
 		// Reynold's rules with all previous info (updates the speed[][] table)
 		reynolds_rules();
 			
 		// Compute wheels speed from reynold's speed
-		compute_wheel_speeds(&msl, &msr);
+		compute_wheel_speeds(&rmsl, &rmsr);
 	
 		// Adapt speed instinct to distance sensor values
 		if (sum_sensors > NB_SENSORS*MIN_SENS) {
@@ -436,10 +458,10 @@ int main(){
 		msl += bmsl;
 		msr += bmsr;
 		
-                  /* Added by Pauline*/
+        /* Added by Pauline*/
 		// Set final speed
-          	msl = set_final_speed(b_speed_left,  r_speed_left,  m_speed_left,  max_sens);
-		msr = set_final_speed(b_speed_right, r_speed_right, m_speed_right, max_sens);
+        //msl = set_final_speed(b_speed_left,  r_speed_left,  m_speed_left,  max_sens);
+		//msr = set_final_speed(b_speed_right, r_speed_right, m_speed_right, max_sens);
 				  
 		// Set speed
 		msl_w = msl*MAX_SPEED_WEB/1000;
