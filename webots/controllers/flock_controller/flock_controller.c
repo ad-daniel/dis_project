@@ -57,6 +57,10 @@
 #define VERBOSE        1
 #define ROBOT_DEBUG	   0 // which robot's information to filter out
 
+/*Added by Pauline for weights*/
+#define INTIALISATION_STEPS  30000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
+#define REYN_MIGR_RATIO      2 // TO TUNE: ratio of weights between Reynolds and Migration urge       
+
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
 WbDeviceTag right_motor; //handler for the right wheel of the robot
@@ -335,6 +339,22 @@ double get_bearing(WbDeviceTag tag) {
 	return bearing;
 }
 
+/*Added by Pauline*/
+float set_final_speed(int b_speed, int r_speed, int m_speed, int max_sens) {  //weights for each of the speed (wb: Braitenberg, wm: Migration, wr: Reynolds)
+  float wb, wm, wr;
+  float final speed;
+  
+  //wb prop to max_sens    and    wr = REYN_MIGR_RATIO * wm    and    wr + wb + wm = 1
+  wb = (max_sens - MIN_SENS)/(MAX_SENS - MIN_SENS); 
+  wm = (1 - wb) / (1 + REYN_MIGR_RATIO);
+  wr = REYN_MIGR_RATIO *  wm;
+  
+  final_speed = wb * b_speed + wm * m_speed + wr * r_speed;
+  
+  return final_speed; 
+}
+
+
 
 // the main function
 int main(){ 
@@ -344,11 +364,22 @@ int main(){
 	int bmsl, bmsr, sum_sensors;	// Braitenberg parameters
 	int distances[NB_SENSORS];		// Array for the distance sensor readings
 	int max_sens;					// Store highest sensor value
-	
+	//float wb, wm, wr;                   
 	reset();						// Resetting the robot
 
 	msl = 0; msr = 0; 
+	bmsl = 0;  bmsr = 0; sum_sensors = 0;
 	max_sens = 0; 
+	
+	/* Added by Pauline
+	//First, e-puck form a Flock: implement when main is already done
+	
+	for(int i=0; i<INTIALISATION_STEPS; i++) {
+              //do as in loop of main with only reynolds and migration
+              //just set  max_sens = 0 in set_final_speed     //don't care about obstacles, try to get a flock aligned with migration 
+	}
+	*/
+	
 	
 	// Forever
 	for(;;){
@@ -374,7 +405,7 @@ int main(){
 		 // Adapt Braitenberg values (empirical tests)
 		bmsl/=MIN_SENS; bmsr/=MIN_SENS;
 		bmsl+=66; bmsr+=72;
-			  
+          	
 		// Send and get information 
 		sim_send_message(); // sending a ping to other robot, so they can measure their distance to this robot
 
@@ -391,7 +422,7 @@ int main(){
 	
 		// Reynold's rules with all previous info (updates the speed[][] table)
 		reynolds_rules();
-	
+			
 		// Compute wheels speed from reynold's speed
 		compute_wheel_speeds(&msl, &msr);
 	
@@ -404,11 +435,17 @@ int main(){
 		// Add Braitenberg
 		msl += bmsl;
 		msr += bmsr;
+		
+                  /* Added by Pauline*/
+		// Set final speed
+          	msl = set_final_speed(b_speed_left,  r_speed_left,  m_speed_left,  max_sens);
+		msr = set_final_speed(b_speed_right, r_speed_right, m_speed_right, max_sens);
 				  
 		// Set speed
 		msl_w = msl*MAX_SPEED_WEB/1000;
 		msr_w = msr*MAX_SPEED_WEB/1000;
-
+		
+		
 		wb_motor_set_velocity(left_motor, msl_w);
 		wb_motor_set_velocity(right_motor, msr_w);
 	
