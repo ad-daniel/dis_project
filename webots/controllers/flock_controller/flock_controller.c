@@ -234,9 +234,11 @@ void compute_wheel_speeds(int *msl, int *msr)
 void compute_wheel_speeds(int *msl, int *msr) 
 {
 	// Compute wanted position from Reynold's speed and current location
-	float x = speed[robot_id][0]*cosf(-my_position[2]) - speed[robot_id][1]*sinf(-my_position[2]); // x in robot coordinates
-	float z = speed[robot_id][0]*sinf(-my_position[2]) + speed[robot_id][1]*cosf(-my_position[2]); // z in robot coordinates
-    
+	//float x = speed[robot_id][0]*cosf(-my_position[2]) - speed[robot_id][1]*sinf(-my_position[2]); // x in robot coordinates
+	//float z = speed[robot_id][0]*sinf(-my_position[2]) + speed[robot_id][1]*cosf(-my_position[2]); // z in robot coordinates
+    float x = speed[robot_id][0];
+    float z = speed[robot_id][1];
+
     //if(robot_id == 0 && VERBOSE){printf("[x] : %f, [y] : %f [theta] : %f\n",x,z,my_position[2]);}
 	
 	float Ku = 0.2;   // Forward control coefficient
@@ -278,8 +280,8 @@ void migration_urge(void)
 	//float migr_rel[2] = {0};
 	
 	//global2rel(migr,migr_rel);
-	speed[robot_id][0] = migr[0];
-	speed[robot_id][1] = migr[1];	
+	global2rel(migr,speed[robot_id]);
+	
 }
 
 
