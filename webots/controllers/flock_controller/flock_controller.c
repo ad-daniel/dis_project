@@ -40,8 +40,8 @@
 
 #define MAX_COMMUNICATION_DIST 0.25
 
-float RULE1_THRESHOLD = 0.20;   	  // Threshold to activate aggregation rule. default 0.20
-float RULE1_WEIGHT    = (0.3/10);  // Weight of aggregation rule. default 0.6/10
+float RULE1_THRESHOLD = 0.020;   	  // Threshold to activate aggregation rule. default 0.20
+float RULE1_WEIGHT    = 300;  // Weight of aggregation rule. default 0.6/10
 
 float RULE2_THRESHOLD = 0.15;      // Threshold to activate dispersion rule. default 0.15
 float RULE2_WEIGHT    = (0.02/10); // Weight of dispersion rule. default 0.02/10
@@ -60,7 +60,9 @@ float RULE3_WEIGHT    = (1.0/10);  // Weight of consistency rule. default 1.0/10
 /*Added by Pauline for weights*/
 #define INTIALISATION_STEPS  30000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
 #define REYN_MIGR_RATIO      2 // TO TUNE: ratio of weights between Reynolds and Migration urge       
-
+#define BRAITENBERG_LOWER_THRESH 350 // below this value, no avoidance
+#define BRAITENBERG_UPPER_THRESH 2000
+#define BRAITENBERG_SPEED_BIAS 300
 
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
@@ -238,7 +240,7 @@ void compute_wheel_speeds(int *msl, int *msr)
     if(robot_id == 0 && VERBOSE){printf("[x] : %f, [y] : %f [theta] : %f\n",x,z,my_position[2]);}
 	
 	float Ku = 0.2;   // Forward control coefficient
-	float Kw = 0.8;  // Rotational control coefficient
+	float Kw = 1.0;  // Rotational control coefficient
 	float range = sqrtf(x*x + z*z);	  // Distance to the wanted position
 	float bearing = atan2(z, x);	  // Orientation of the wanted position
 	
@@ -355,8 +357,6 @@ void reynolds_rules() {
 		speed[robot_id][j] +=  dispersion[j] * RULE2_WEIGHT;
 		speed[robot_id][j] +=  consistency[j] * RULE3_WEIGHT;
 	}
-	
-	speed[robot_id][1] *= -1; //y axis of webots is inverted
 }
 
 /*
@@ -444,20 +444,31 @@ double get_bearing(WbDeviceTag tag) {
 
 /*Added by Pauline*/
 float set_final_speed(int b_speed, int r_speed, int m_speed, int max_sens) {  //weights for each of the speed (wb: Braitenberg, wm: Migration, wr: Reynolds)
-  static float wb, wm, wr;
-  static float final_speed;
-  static bool f_computeNot = 1;
+	static float wb, wm, wr;
+	static float final_speed;
+	static bool f_computeNot = 1;
   
-  if(f_computeNot){
-  	//wb prop to max_sens    and    wr = REYN_MIGR_RATIO * wm    and    wr + wb + wm = 1
-  	wb = (max_sens - MIN_SENS)/(MAX_SENS - MIN_SENS); 
-  	wm = (1 - wb) / (1 + REYN_MIGR_RATIO);
-  	wr = REYN_MIGR_RATIO *  wm;
+	if(f_computeNot){
+  		//wb prop to max_sens    and    wr = REYN_MIGR_RATIO * wm    and    wr + wb + wm = 1
+  		
+  		if (log(max_sens) > log(BRAITENBERG_LOWER_THRESH)){
+  			wb = log(max_sens) / log(BRAITENBERG_UPPER_THRESH); // Above upper threshold, do only avoidance;
+  			wb = wb > 1.0 ? 1.0 : wb;
+  		}
+  		else{
+  			wb = 0.0;
+  		}
+  		
 
-  	f_computeNot = ~f_computeNot;
-  }
+		wm = (1 - wb) / (1 + REYN_MIGR_RATIO);
+		wr = REYN_MIGR_RATIO *  wm;
+  		
+	}
 
-  final_speed = wb * b_speed + wm * m_speed + wr * r_speed;
+	if(ROBOT_DEBUG == robot_id && VERBOSE){printf("[wb] [%f] :: [wm] [%f] :: [wr] [%f]\n", wb, wm, wr);}
+
+	final_speed = wb * b_speed + wm * m_speed + wr * r_speed;
+	f_computeNot = ~f_computeNot;
   
   return (int) final_speed; 
 }
@@ -517,6 +528,13 @@ int main(){
 			// Adapt Braitenberg values (empirical tests)
 			bmsl/=MIN_SENS; bmsr/=MIN_SENS;
 			bmsl+=66; bmsr+=72;
+
+			// add speed bias to ensure we are moving rather fast during avoidance
+			//bmsl+=400; bmsr +=400;
+
+			bmsl = bmsl + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsl + BRAITENBERG_SPEED_BIAS : bmsl;
+			bmsr = bmsr + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsr + BRAITENBERG_SPEED_BIAS : bmsr;
+
         }	
 
 		// Send and get information 
