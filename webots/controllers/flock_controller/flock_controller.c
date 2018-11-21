@@ -41,10 +41,10 @@
 #define MAX_COMMUNICATION_DIST 0.25
 
 float RULE1_THRESHOLD = 0.020;   	  // Threshold to activate aggregation rule. default 0.20
-float RULE1_WEIGHT    = 300;  // Weight of aggregation rule. default 0.6/10
+float RULE1_WEIGHT    = 1;  // Weight of aggregation rule. default 0.6/10
 
-float RULE2_THRESHOLD = 0.15;      // Threshold to activate dispersion rule. default 0.15
-float RULE2_WEIGHT    = (0.02/10); // Weight of dispersion rule. default 0.02/10
+float RULE2_THRESHOLD = 0.015;      // Threshold to activate dispersion rule. default 0.15
+float RULE2_WEIGHT    = 1; // Weight of dispersion rule. default 0.02/10
 
 float RULE3_WEIGHT    = (1.0/10);  // Weight of consistency rule. default 1.0/10
 
@@ -237,7 +237,7 @@ void compute_wheel_speeds(int *msl, int *msr)
 	float x = speed[robot_id][0]*cosf(-my_position[2]) - speed[robot_id][1]*sinf(-my_position[2]); // x in robot coordinates
 	float z = speed[robot_id][0]*sinf(-my_position[2]) + speed[robot_id][1]*cosf(-my_position[2]); // z in robot coordinates
     
-    if(robot_id == 0 && VERBOSE){printf("[x] : %f, [y] : %f [theta] : %f\n",x,z,my_position[2]);}
+    //if(robot_id == 0 && VERBOSE){printf("[x] : %f, [y] : %f [theta] : %f\n",x,z,my_position[2]);}
 	
 	float Ku = 0.2;   // Forward control coefficient
 	float Kw = 1.0;  // Rotational control coefficient
@@ -248,19 +248,19 @@ void compute_wheel_speeds(int *msl, int *msr)
 	float u = Ku*range*cosf(bearing);
 	// Compute rotational control
 	float w = Kw*bearing;
-	if(robot_id == 0 && VERBOSE){printf("[u] : %f, [w] : %f [range] : %f\n",u,w,range);}
+	//if(robot_id == 0 && VERBOSE){printf("[u] : %f, [w] : %f [range] : %f\n",u,w,range);}
 
 	// Convert to wheel speeds!
 	*msl += (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
 	*msr += (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-	if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
+	//if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
 
   	if(ABS(*msl) > MAX_SPEED || ABS(*msr) > MAX_SPEED){
 	float max = (ABS(*msl)>ABS(*msr)?ABS(*msl):ABS(*msr));
 	*msl = *msl/max * MAX_SPEED;
 	*msr = *msr/max * MAX_SPEED;
 	}
-	if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
+	//if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
 
 }
 
@@ -307,7 +307,7 @@ void reynolds_rules() {
 
 		for (j=0;j<2;j++) {
 			if(flockmates[k]){
-				rel_avg_speed[j] += relative_pos[k][j];
+				rel_avg_speed[j] += relative_speed[k][j];
 				rel_avg_loc[j] += relative_pos[k][j];
 				n_flockmates++;
 			}
@@ -330,25 +330,33 @@ void reynolds_rules() {
 		if(dist > RULE1_THRESHOLD){
 			cohesion[j] = rel_avg_loc[j];
 		}
+		if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R1 dist [%f] :: coehsion [%f][%f]\n", dist, cohesion[0], cohesion[1]); }
 	}
 
 	// Rule 2 - Dispersion/Separation: keep far enough from flockmates
+	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R2 distances :: ]\n"); }
+
 	for(k=0;k<FLOCK_SIZE;k++){
 		if(k == robot_id){
 			continue;
 		}
 
 		dist = sqrt(relative_pos[k][0]*relative_pos[k][0] + relative_pos[k][1]*relative_pos[k][1]);
+		if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("[%d : %f]", k, dist); }
+
 		if(dist < RULE2_THRESHOLD && flockmates[k]){
 			for (j=0;j<2;j++) {
 				dispersion[j] -= 1.0/(relative_pos[k][j]);
 			}
 		}
 	}	
+	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("\nR2 dispersion [%f][%f]", dispersion[0], dispersion[1]); }
   
 	// Rule 3 - Consistency/Alignment: match the speeds of flockmates
 	for (j=0;j<2;j++){
 		consistency[j] = rel_avg_speed[j];
+		if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R3 consistency [%f][%f]\n", consistency[0], consistency[1]); }
+
 	}
 
 	//aggregation of all behaviors with relative influence determined by weights
@@ -356,6 +364,8 @@ void reynolds_rules() {
 		speed[robot_id][j] = cohesion[j] * RULE1_WEIGHT;
 		speed[robot_id][j] +=  dispersion[j] * RULE2_WEIGHT;
 		speed[robot_id][j] +=  consistency[j] * RULE3_WEIGHT;
+		if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("ACC  [%1.7f][%1.7f][%1.7f]\n", cohesion[j] * RULE1_WEIGHT, dispersion[j] * RULE2_WEIGHT, consistency[j] * RULE3_WEIGHT); }
+
 	}
 }
 
@@ -502,9 +512,10 @@ int main(){
 	
 	// Forever
 	for(;;){
+		if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("\n"); }
+
 		// reset flockmates list. It's populated by sim_receive_message
 		for(i=0;i<FLOCK_SIZE;i++){flockmates[i] = 0;}
-
 		rmsl = 0; rmsr = 0; 
 		bmsl = 0; bmsr = 0;
 		mmsl = 0; mmsr = 0;
