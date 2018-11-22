@@ -76,6 +76,7 @@ WbDeviceTag ds[NB_SENSORS];	// Handle for the infrared distance sensors
 WbDeviceTag receiver2;		// Handle for the receiver node
 WbDeviceTag emitter2;		// Handle for the emitter node
 WbDeviceTag compass;
+WbDeviceTag receiver3;
 
 WbDeviceTag receiver3;
 
@@ -102,6 +103,7 @@ bool flockmates[FLOCK_SIZE] = {0};
 static void reset() 
 {
 	int i;
+  	char *inbuffer; //Mathilde
 
   	char *inbuffer; //Mathilde
 
@@ -130,7 +132,7 @@ static void reset()
 	for(i=0;i<NB_SENSORS;i++){
 		  wb_distance_sensor_enable(ds[i],64);
 	}
-	wb_receiver_enable(receiver2,64);
+
 	wb_receiver_enable(receiver2, 64);
 	wb_receiver_enable(receiver3, 64); //Mathilde 
 
@@ -297,9 +299,10 @@ void rel2global(float* v_global, float* v_ref){
 void migration_urge(void)
 {
 	//float migr_rel[2] = {0};
-	
+
 	global2rel(migr,speed[robot_id]);
-	}
+	
+}
 
 
 /*
