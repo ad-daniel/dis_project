@@ -41,9 +41,9 @@
 #define MAX_COMMUNICATION_DIST 0.25
 
 float RULE1_THRESHOLD = 0.05;   	  // Threshold to activate aggregation rule. default 0.20
-float RULE1_WEIGHT    = (900);          // Weight of aggregation rule. default 0.6/10
+float RULE1_WEIGHT    = (800);          // Weight of aggregation rule. default 0.6/10
 
-float RULE2_THRESHOLD = 0.2;      // Threshold to activate dispersion rule. default 0.15
+float RULE2_THRESHOLD = 0.15;      // Threshold to activate dispersion rule. default 0.15
 float RULE2_WEIGHT    = (900);       // Weight of dispersion rule. default 0.02/10
 
 float RULE3_WEIGHT    = (5);       // Weight of consistency rule. default 1.0/10
@@ -582,7 +582,7 @@ int main(){
          msr = set_final_speed(bmsr,  rmsr,  mmsr, max_sens);*/
          float w1;
          if(time<400){
-         w1 = 0.5;
+         w1 = 0.4;
          if(robot_id== 0){printf("w1: %f\n",w1);}
          }
          else{
