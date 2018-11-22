@@ -77,6 +77,8 @@ WbDeviceTag receiver2;		// Handle for the receiver node
 WbDeviceTag emitter2;		// Handle for the emitter node
 WbDeviceTag compass;
 
+WbDeviceTag receiver3;
+
 int robot_id_u, robot_id;	// Unique and normalized (between 0 and FLOCK_SIZE-1) robot ID
 int robot_flock_id;
 
@@ -101,6 +103,8 @@ static void reset()
 {
 	int i;
 
+  	char *inbuffer; //Mathilde
+
 	wb_robot_init();
 
 	compass = wb_robot_get_device("compass");
@@ -108,6 +112,7 @@ static void reset()
 
 	receiver2 = wb_robot_get_device("receiver2");
 	emitter2 = wb_robot_get_device("emitter2");
+	receiver3 = wb_robot_get_device("receiver3"); //Mathilde
 	
 	//get motors
 	left_motor = wb_robot_get_device("left wheel motor");
@@ -126,6 +131,20 @@ static void reset()
 		  wb_distance_sensor_enable(ds[i],64);
 	}
 	wb_receiver_enable(receiver2,64);
+	wb_receiver_enable(receiver2, 64);
+	wb_receiver_enable(receiver3, 64); //Mathilde 
+
+    float weight1; float weight2; float weight3; float weightX; float weightY; 
+
+    while(wb_receiver_get_queue_length(receiver3) > 0){
+        inbuffer = (char*) wb_receiver_get_data(receiver3);
+        //printf("%s\n", inbuffer);
+        sscanf(inbuffer,"%f#%f#%f#%f#%f\n",&weight1,&weight2,&weight3,&weightX,&weightY);
+        //printf("%.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
+        //printf("initializing\n");
+        wb_receiver_next_packet(receiver3);
+    }
+    printf("Received from supervisor: %.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
 
 	//Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
 	sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
@@ -234,13 +253,15 @@ void compute_wheel_speeds(int *msl, int *msr)
 void compute_wheel_speeds(int *msl, int *msr) 
 {
 	// Compute wanted position from Reynold's speed and current location
-	float x = speed[robot_id][0]*cosf(-my_position[2]) - speed[robot_id][1]*sinf(-my_position[2]); // x in robot coordinates
-	float z = speed[robot_id][0]*sinf(-my_position[2]) + speed[robot_id][1]*cosf(-my_position[2]); // z in robot coordinates
-    
+	//float x = speed[robot_id][0]*cosf(-my_position[2]) - speed[robot_id][1]*sinf(-my_position[2]); // x in robot coordinates
+	//float z = speed[robot_id][0]*sinf(-my_position[2]) + speed[robot_id][1]*cosf(-my_position[2]); // z in robot coordinates
+    float x = speed[robot_id][0];
+    float z = speed[robot_id][1];
+
     //if(robot_id == 0 && VERBOSE){printf("[x] : %f, [y] : %f [theta] : %f\n",x,z,my_position[2]);}
 	
 	float Ku = 0.2;   // Forward control coefficient
-	float Kw = 1.0;  // Rotational control coefficient
+	float Kw = 0.8;  // Rotational control coefficient
 	float range = sqrtf(x*x + z*z);	  // Distance to the wanted position
 	float bearing = atan2(z, x);	  // Orientation of the wanted position
 	
@@ -277,10 +298,8 @@ void migration_urge(void)
 {
 	//float migr_rel[2] = {0};
 	
-	//global2rel(migr,migr_rel);
-	speed[robot_id][0] = migr[0];
-	speed[robot_id][1] = migr[1];	
-}
+	global2rel(migr,speed[robot_id]);
+	}
 
 
 /*

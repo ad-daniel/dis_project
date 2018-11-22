@@ -9,7 +9,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.9931345111565514 -0.11262694456245013 -0.03160718444222321 1.03351
-  position -1.6585415096424505 5.666309726373233 3.637095016590059
+  position -1.6585415096424505 5.666309726373233 3.6370950165900586
 }
 PointLight {
   intensity 0.5
@@ -77,7 +77,7 @@ DEF ground Solid {
   boundingObject USE ground_geo
 }
 DEF long_rock_3 Solid {
-  translation -3.041071699876973 -3.552713678800501e-15 1.650332079887817
+  translation -3.031044682835195 7.105427357601002e-15 -1.6450706069208678
   rotation 0 1 0 1.5708
   children [
     Shape {
@@ -102,7 +102,7 @@ DEF long_rock_3 Solid {
   }
 }
 DEF long_rock_4 Solid {
-  translation -2.876199586466636 8.79296635503124e-14 1.9065378042348209
+  translation -2.775939103523687 -9.414691248821327e-14 1.6403401062108796
   children [
     Shape {
       appearance Appearance {
@@ -126,7 +126,7 @@ DEF long_rock_4 Solid {
   }
 }
 DEF long_rock_6 Solid {
-  translation -2.7667133899392873 0 -1.6737639640816726
+  translation -2.4672104106444803 1.7763568394002505e-15 -1.7344751637736666
   children [
     Shape {
       appearance Appearance {
@@ -150,7 +150,7 @@ DEF long_rock_6 Solid {
   }
 }
 DEF rock Solid {
-  translation -1.819929791349682 2.6645352591003757e-15 -1.827955985457224
+  translation -1.5008941223797716 2.6645352591003757e-15 -1.7656670765707672
   rotation 0 1 0 5.02662
   children [
     Shape {
@@ -175,7 +175,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -2.210902890910349 1.7763568394002505e-15 -1.7725292439613496
+  translation -2.4630912392392506 0 -1.8202050937847665
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -200,7 +200,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -0.5423208244330064 -2.6645352591003757e-15 1.8031843086292345
+  translation -1.6343367349325735 -2.6645352591003757e-15 1.82177455510512
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -225,7 +225,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -2.5302923014285263 -5.595524044110789e-14 1.8037526109242032
+  translation -1.2119443671542405 7.016609515630989e-14 -1.7614455785761776
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -250,7 +250,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.7683385296471164 0 1.8266640624281336
+  translation -2.8629300316151354 0 1.6950438970080874
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -275,7 +275,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -2.760201622526339 8.881784197001252e-16 1.6896369925776535
+  translation -2.9445362553400627 3.552713678800501e-15 -1.8346032083591812
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -300,7 +300,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -0.6976413574452209 0 -1.859792698245489
+  translation -1.3770644734516035 8.881784197001252e-16 1.7989847425265173
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -325,7 +325,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.3691221658734156 1.776353678800501e-15 -1.8398067377016056
+  translation -1.8150179004743219 -7.19424551563099e-14 -1.8458828729906374
   children [
     Shape {
       appearance Appearance {
@@ -349,7 +349,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -0.9878293167592153 0 1.7868963498543582
+  translation -1.9338096913807445 0 1.7684781395412492
   rotation 0 -1 0 0.325642
   children [
     Shape {
@@ -374,7 +374,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.4628416588134 -1.7763568394002505e-15 1.8208344391938553
+  translation -2.2829267248877283 -8.881784197001252e-16 1.7562563148258292
   children [
     Shape {
       appearance Appearance {
@@ -398,7 +398,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -0.24466310635491784 0 1.8107131340906317
+  translation -1.1114514943790739 6.394884621840902e-14 1.80494516095519
   children [
     Shape {
       appearance Appearance {
@@ -422,7 +422,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -1.005002733118224 -4.440892098500626e-15 -1.8561320691115528
+  translation -0.9024913230158665 6.483702463810914e-14 -1.8206383070630114
   children [
     Shape {
       appearance Appearance {
@@ -446,7 +446,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -2.15027788350286 -1.77636e-15 1.782903376410717
+  translation -2.539003399493853 -1.77636e-15 1.709985452723815
   children [
     Shape {
       appearance Appearance {
@@ -470,7 +470,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -2.9659539551184895 -8.881784197001252e-16 -1.75351619159876
+  translation -2.731568853945919 0 -1.7417028180380727
   children [
     Shape {
       appearance Appearance {
@@ -494,7 +494,7 @@ DEF rock Solid {
   }
 }
 DEF rock Solid {
-  translation -2.561508265608688 -8.881784197001252e-16 -1.748327396117441
+  translation -2.1457899774229268 3.552713678800501e-15 -1.7628424518721284
   rotation 0 -1 0 2.05704
   children [
     Shape {
@@ -533,6 +533,10 @@ DEF epuck0 E-puck {
   controller "flock_controller"
   groundSensorsSlot [
     Receiver {
+      name "receiver3"
+      channel 1
+    }
+    Receiver {
       name "receiver2"
       type "infra-red"
       channel 1
@@ -552,6 +556,10 @@ DEF epuck1 E-puck {
   name "epuck1"
   controller "flock_controller"
   groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+      channel 1
+    }
     Receiver {
       name "receiver2"
       type "infra-red"
@@ -573,6 +581,10 @@ DEF epuck2 E-puck {
   controller "flock_controller"
   groundSensorsSlot [
     Receiver {
+      name "receiver3"
+      channel 1
+    }
+    Receiver {
       name "receiver2"
       type "infra-red"
       channel 1
@@ -593,6 +605,10 @@ DEF epuck3 E-puck {
   controller "flock_controller"
   groundSensorsSlot [
     Receiver {
+      name "receiver3"
+      channel 1
+    }
+    Receiver {
       name "receiver2"
       type "infra-red"
       channel 1
@@ -612,6 +628,10 @@ DEF epuck4 E-puck {
   name "epuck4"
   controller "flock_controller"
   groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+      channel 1
+    }
     Receiver {
       name "receiver2"
       type "infra-red"
