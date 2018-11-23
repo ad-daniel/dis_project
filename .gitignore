@@ -1,4 +1,6 @@
-
+.*.wbproj
+webots/controllers/flock_controller/build/
+webots/controllers/flock_super/build/
 # Prerequisites
 *.d
 
