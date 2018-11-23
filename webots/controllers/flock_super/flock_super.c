@@ -22,6 +22,8 @@
 #define TIME_STEP	64		// [ms] Length of time step
 #define VMAX        0.1287
 
+#define OPTIMIZE 0
+
 WbNodeRef robs[FLOCK_SIZE];		// Robots nodes
 WbFieldRef robs_trans[FLOCK_SIZE];	// Robots translation fields
 WbFieldRef robs_rotation[FLOCK_SIZE];	// Robots rotation fields
@@ -284,7 +286,7 @@ int main(int argc, char *args[]) {
 	FILE *line_to_read = NULL; 
 	int nb_repetition = 0; //find a way to count nb of simulation with the same parameters
 	
-	test_param(fparam, line_to_read);
+	if(OPTIMIZE){ test_param(fparam, line_to_read); }
 
 		
 	for(;;) {
@@ -304,13 +306,15 @@ int main(int argc, char *args[]) {
 			//printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: performance %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
 			
 			//Mathilde
-			nb_repetition += 1; 
-			fp = fopen("Reynolds_performance 2.csv" ,"a");
-			fprintf(fp, "%d,%d,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance);
-            fclose(fp);			
+			if(OPTIMIZE){ 
+				nb_repetition += 1; 
+				fp = fopen("Reynolds_performance 2.csv" ,"a");
+				fprintf(fp, "%d,%d,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance);
+	            fclose(fp);		
+	        }	
 		}
 
-		if(t==40000){
+		if(t==40000 && !OPTIMIZE){
             printf("Exit condition\n");
 	        if(data_line[0][0] <= data_glob[0][0]-1){
         	    data_line[0][0] += 1;

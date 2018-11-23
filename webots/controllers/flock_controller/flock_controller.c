@@ -40,13 +40,13 @@
 
 #define MAX_COMMUNICATION_DIST 0.25
 
-float RULE1_THRESHOLD = 0.020;   	  // Threshold to activate aggregation rule. default 0.20
+float RULE1_THRESHOLD = 0.14;   	  // Threshold to activate aggregation rule. default 0.20
 float RULE1_WEIGHT    = 1;  // Weight of aggregation rule. default 0.6/10
 
-float RULE2_THRESHOLD = 0.015;      // Threshold to activate dispersion rule. default 0.15
+float RULE2_THRESHOLD = 0.1;      // Threshold to activate dispersion rule. default 0.15
 float RULE2_WEIGHT    = 1; // Weight of dispersion rule. default 0.02/10
 
-float RULE3_WEIGHT    = (1.0/10);  // Weight of consistency rule. default 1.0/10
+float RULE3_WEIGHT    = 1;  // Weight of consistency rule. default 1.0/10
 
 #define MIGRATORY_URGE 1 			  // Tells the robots if they should just go forward or move towards a specific migratory direction
 #define REYNOLDS 1
@@ -56,7 +56,7 @@ float RULE3_WEIGHT    = (1.0/10);  // Weight of consistency rule. default 1.0/10
 
 #define VERBOSE        1
 #define ROBOT_DEBUG	   0 // which robot's information to filter out
-
+#define OPTIMIZE       1
 /*Added by Pauline for weights*/
 #define INTIALISATION_STEPS  30000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
 #define REYN_MIGR_RATIO      2 // TO TUNE: ratio of weights between Reynolds and Migration urge       
@@ -103,7 +103,6 @@ bool flockmates[FLOCK_SIZE] = {0};
 static void reset() 
 {
 	int i;
-  	char *inbuffer; //Mathilde
 
   	char *inbuffer; //Mathilde
 
@@ -134,20 +133,23 @@ static void reset()
 	}
 
 	wb_receiver_enable(receiver2, 64);
-	wb_receiver_enable(receiver3, 64); //Mathilde 
 
-    float weight1; float weight2; float weight3; float weightX; float weightY; 
+	if(OPTIMIZE){
+		wb_receiver_enable(receiver3, 64); //Mathilde 
 
-    while(wb_receiver_get_queue_length(receiver3) > 0){
-        inbuffer = (char*) wb_receiver_get_data(receiver3);
-        //printf("%s\n", inbuffer);
-        sscanf(inbuffer,"%f#%f#%f#%f#%f\n",&weight1,&weight2,&weight3,&weightX,&weightY);
-        //printf("%.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
-        //printf("initializing\n");
-        wb_receiver_next_packet(receiver3);
-    }
-    printf("Received from supervisor: %.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
+	    float weight1; float weight2; float weight3; float weightX; float weightY; 
 
+	    while(wb_receiver_get_queue_length(receiver3) > 0){
+	        inbuffer = (char*) wb_receiver_get_data(receiver3);
+	        //printf("%s\n", inbuffer);
+	        sscanf(inbuffer,"%f#%f#%f#%f#%f\n",&weight1,&weight2,&weight3,&weightX,&weightY);
+	        //printf("%.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
+	        //printf("initializing\n");
+	        wb_receiver_next_packet(receiver3);
+	    }
+	    printf("Received from supervisor: %.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
+	}
+	
 	//Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
 	sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
 	robot_id = robot_id_u%FLOCK_SIZE;	  		    // normalize between 0 and FLOCK_SIZE-1
@@ -327,36 +329,41 @@ void reynolds_rules() {
 			continue;
 		}
 
-		for (j=0;j<2;j++) {
-			if(flockmates[k]){
+		if(flockmates[k]){
+			for (j=0;j<2;j++) {
 				rel_avg_speed[j] += relative_speed[k][j];
 				rel_avg_loc[j] += relative_pos[k][j];
-				n_flockmates++;
 			}
+			n_flockmates++;
 		}
 	}
 	
-	for(j=0;j<2;j++){
-		if(n_flockmates>0){
+	if(n_flockmates>0){
+		for(j=0;j<2;j++){
 			rel_avg_speed[j] /= n_flockmates;
 			rel_avg_loc[j] /= n_flockmates;
 		}
-		else{
-			return; // no flockmates, no raynolds to be done
-		}
 	}
+	else{
+		speed[robot_id][0] = 0;
+		speed[robot_id][1] = 0;		
+		return; // no flockmates, no raynolds to be done
+	}
+	
+	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R0 rel_avg_loc [%f][%f] rel_avg_speed [%f][%f]\n", rel_avg_loc[0], rel_avg_loc[1], rel_avg_speed[0], rel_avg_speed[1]); }
+
 
 	// Rule 1 - Aggregation/Cohesion: move towards the center of mass
 	dist = sqrt(rel_avg_loc[0]*rel_avg_loc[0] + rel_avg_loc[1]*rel_avg_loc[1]);
-	for (j=0;j<2;j++){	
-		if(dist > RULE1_THRESHOLD){
+	if(dist > RULE1_THRESHOLD){
+		for (j=0;j<2;j++){	
 			cohesion[j] = rel_avg_loc[j];
 		}
-		if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R1 dist [%f] :: coehsion [%f][%f]\n", dist, cohesion[0], cohesion[1]); }
 	}
+	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R1 dist [%f] :: coehsion [%f][%f]\n", dist, cohesion[0], cohesion[1]); }
 
 	// Rule 2 - Dispersion/Separation: keep far enough from flockmates
-	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R2 distances :: ]\n"); }
+	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R2 distances :: "); }
 
 	for(k=0;k<FLOCK_SIZE;k++){
 		if(k == robot_id){
@@ -372,7 +379,7 @@ void reynolds_rules() {
 			}
 		}
 	}	
-	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("\nR2 dispersion [%f][%f]", dispersion[0], dispersion[1]); }
+	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("\nR2 dispersion [%f][%f]\n", dispersion[0], dispersion[1]); }
   
 	// Rule 3 - Consistency/Alignment: match the speeds of flockmates
 	for (j=0;j<2;j++){
