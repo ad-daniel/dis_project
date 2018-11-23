@@ -2,7 +2,7 @@ clc
 clear all 
 close all
 
-addpath("../webots/controllers/flock_super")
+addpath("../webots/controllers/flock_super2")
 
 Reynolds_perf = -1; errmsg = ''; 
 data_label = ["nb_simul","time","orientation","cohesion","velocity",...
@@ -16,44 +16,61 @@ while Reynolds_perf < 0
     [Reynolds_perf, errmsg] = fopen('Reynolds_performance.csv', 'r'); 
     performances = csvread('Reynolds_performance.csv');
     [M,N]=size(performances); 
-    nb_simul = max(performances(:,1)); 
-    nb_steps_per_simul = sum(performances(:,1)==nb_simul); 
+    %nb_simul = max(performances(:,1)); 
+    %nb_steps_per_simul = sum(performances(:,1)==nb_simul); 
+    nb_steps_per_simul = max(performances(:,1)); 
+    nb_simul = sum(performances(:,1)==nb_steps_per_simul); 
 end
 
-perf_boxplot = zeros(nb_simul,M+1);
-comp_mean = [ones(nb_simul,1), zeros(nb_simul, nb_metrics)];
-comp_std = [ones(nb_simul,1), zeros(nb_simul, nb_metrics)];
-simul = 1; c = 1;
-    
+perf_boxplot = zeros(nb_simul,1+nb_metrics*nb_steps_per_simul);
+
+nb_simul_real = 1; c = 1;
+syms k x; set_cumul = symsum(k,k,1,nb_steps_per_simul);    
+
 %Reorganise data so it can realize the boxplot
 while(c<=M)
+    %fprintf('c value : %d\n',c);
 %     somme = sum(performances(c:c+nb_steps_per_simul -1, 1))
 %     theorie = nb_steps_per_simul * performances(c,1)
-    if(sum(performances(c:c+nb_steps_per_simul -1, 1))==nb_steps_per_simul*performances(c,1))
-        perf_boxplot(simul,:)=[performances(c,1), performances(c:c+nb_steps_per_simul -1, 3)'...
+    %if(sum(performances(c:c+nb_steps_per_simul -1, 1))==nb_steps_per_simul*performances(c,1))
+      if(sum(performances(c:c+nb_steps_per_simul -1, 1))==set_cumul && performances(c,1) == 1)
+          perf_boxplot(nb_simul_real,:)=[performances(c,1), performances(c:c+nb_steps_per_simul -1, 3)'...
                                 performances(c:c+nb_steps_per_simul -1, 4)'...
                                 performances(c:c+nb_steps_per_simul -1, 5)'...
                                 performances(c:c+nb_steps_per_simul -1, 6)'];
         c = c + nb_steps_per_simul;
-        simul = simul + 1; 
-    else
-        fprintf('not enough steps for a simulation\n');
-        perf_boxplot(simul,:) = [performances(c,1), zeros(1, nb_metrics*nb_steps_per_simul)]; 
-        c = c+1; 
-        break; 
+        nb_simul_real = nb_simul_real + 1; 
+      else
+        %fprintf('not enough steps for a simulation at line %d\n', c);
+        k = 1;
+        while(performances(c+k,1)~=1 && k<nb_steps_per_simul)
+            k = k+1;
+        end
+        if(k>nb_steps_per_simul-1)
+            fprintf('2 lines will be problematic\n');
+            fprintf('line %d, simul n° %d\n', c, nb_simul_real);
+        end
+        %nb_lines_to_jump = k
+        perf_boxplot(nb_simul_real,:) = [performances(c,1), zeros(1, nb_metrics*nb_steps_per_simul)]; 
+        nb_simul_real = nb_simul_real + 1; 
+        c = c+k; 
     end
 end
 
+nb_simul_real = nb_simul_real -1;
+comp_mean = [ones(nb_simul_real,1), zeros(nb_simul_real, nb_metrics)];
+comp_std = [ones(nb_simul_real,1), zeros(nb_simul_real, nb_metrics)];
 
 
 %Boxplot of every metrics depending on the parameters of the simulation
-for(i=2:nb_steps_per_simul:M+1)
+for(i=2:nb_steps_per_simul:nb_metrics*nb_steps_per_simul+1)
     j = floor(i/nb_steps_per_simul)+2; %to obtain indice for data_label ref
     comp_mean(:,j)= mean(perf_boxplot(:,i:i+nb_steps_per_simul -1) ,2);
     comp_std(:,j) = std(perf_boxplot(:,i:i+nb_steps_per_simul -1),0,2);
     
     figure; 
-    boxplot(perf_boxplot(:,i:i+nb_steps_per_simul -1)', perf_boxplot(:,1));  %passer en 3 dimensions plus simple?
+    %boxplot(perf_boxplot(:,i:i+nb_steps_per_simul -1)', perf_boxplot(:,1));  %passer en 3 dimensions plus simple?
+    boxplot(perf_boxplot(:,i:i+nb_steps_per_simul -1)');
     ylabel(data_label(j)); 
     xlabel(data_label(2));
 end
