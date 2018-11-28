@@ -41,15 +41,15 @@
 #define MAX_COMMUNICATION_DIST 0.25
 
 float RULE1_THRESHOLD = 0.14;   	  // Threshold to activate aggregation rule. default 0.20
-float RULE1_WEIGHT    = 1;  // Weight of aggregation rule. default 0.6/10
+float RULE1_WEIGHT    = 10;  // Weight of aggregation rule. default 0.6/10
 
-float RULE2_THRESHOLD = 0.1;      // Threshold to activate dispersion rule. default 0.15
-float RULE2_WEIGHT    = 1; // Weight of dispersion rule. default 0.02/10
+float RULE2_THRESHOLD = 0.10;      // Threshold to activate dispersion rule. default 0.15
+float RULE2_WEIGHT    = 0.5; // Weight of dispersion rule. default 0.02/10
 
-float RULE3_WEIGHT    = 1;  // Weight of consistency rule. default 1.0/10
+float RULE3_WEIGHT    = 0.5;  // Weight of consistency rule. default 1.0/10
 
 #define MIGRATORY_URGE 1 			  // Tells the robots if they should just go forward or move towards a specific migratory direction
-#define REYNOLDS 1
+#define REYNOLDS 0
 #define BRAITENBERG 1
 
 #define ABS(x) ((x>=0)?(x):-(x))
@@ -59,7 +59,7 @@ float RULE3_WEIGHT    = 1;  // Weight of consistency rule. default 1.0/10
 #define OPTIMIZE       1
 /*Added by Pauline for weights*/
 #define INTIALISATION_STEPS  30000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
-#define REYN_MIGR_RATIO      2 // TO TUNE: ratio of weights between Reynolds and Migration urge       
+#define REYN_MIGR_RATIO      1 // TO TUNE: ratio of weights between Reynolds and Migration urge       
 #define BRAITENBERG_LOWER_THRESH 350 // below this value, no avoidance
 #define BRAITENBERG_UPPER_THRESH 2000
 #define BRAITENBERG_SPEED_BIAS 300
@@ -225,8 +225,6 @@ void update_self_motion(int msl, int msr) {
     my_position[2] = (my_position[2]>2*M_PI? my_position[2]-2*M_PI:my_position[2]);
 }
 
-
-
 /*
  * Computes wheel speed given a certain X,Z speed
  */
@@ -259,33 +257,32 @@ void compute_wheel_speeds(int *msl, int *msr)
 	// Compute wanted position from Reynold's speed and current location
 	//float x = speed[robot_id][0]*cosf(-my_position[2]) - speed[robot_id][1]*sinf(-my_position[2]); // x in robot coordinates
 	//float z = speed[robot_id][0]*sinf(-my_position[2]) + speed[robot_id][1]*cosf(-my_position[2]); // z in robot coordinates
-    float x = speed[robot_id][0];
-    float z = speed[robot_id][1];
-
-    //if(robot_id == 0 && VERBOSE){printf("[x] : %f, [y] : %f [theta] : %f\n",x,z,my_position[2]);}
+        float x = speed[robot_id][0];
+        float z = speed[robot_id][1];
+        
+    if(robot_id == 0 && VERBOSE){printf("[x] : %f, [y] : %f [theta] : %f\n",x,z,my_position[2]);}
 	
-	float Ku = 0.2;   // Forward control coefficient
-	float Kw = 0.8;  // Rotational control coefficient
+	float Ku = 0.02;   // Forward control coefficient
+	float Kw = 0.08;  // Rotational control coefficient
 	float range = sqrtf(x*x + z*z);	  // Distance to the wanted position
 	float bearing = atan2(z, x);	  // Orientation of the wanted position
-	
 	// Compute forward control
-	float u = Ku*range*cosf(bearing);
+	float u = Ku*range;//*cosf(bearing);
 	// Compute rotational control
 	float w = Kw*bearing;
-	//if(robot_id == 0 && VERBOSE){printf("[u] : %f, [w] : %f [range] : %f\n",u,w,range);}
+	if(robot_id == 0 && VERBOSE){printf("[u] : %f, [w] : %f [range] : %f\n",u,w,range);}
 
 	// Convert to wheel speeds!
 	*msl += (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
 	*msr += (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-	//if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
+	if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
 
   	if(ABS(*msl) > MAX_SPEED || ABS(*msr) > MAX_SPEED){
 	float max = (ABS(*msl)>ABS(*msr)?ABS(*msl):ABS(*msr));
 	*msl = *msl/max * MAX_SPEED;
 	*msr = *msr/max * MAX_SPEED;
 	}
-	//if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
+	if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
 
 }
 
@@ -293,10 +290,12 @@ void global2rel(float* v_global, float* v_ref){
 	v_ref[0] = cos(my_position[2])*(v_global[0]) - sin(my_position[2])*(v_global[1]);
 	v_ref[1] = sin(my_position[2])*(v_global[0]) + cos(my_position[2])*(v_global[1]);
 }
-void rel2global(float* v_global, float* v_ref){
-	v_ref[0] = cos(-my_position[2])*(v_global[0]) - sin(-my_position[2])*(v_global[1]);
-	v_ref[1] = sin(-my_position[2])*(v_global[0]) + cos(-my_position[2])*(v_global[1]);
+void rel2global(float* v_ref, float* v_global){
+
+    v_global[0] = cos(-my_position[2])*(v_global[0]) - sin(-my_position[2])*(v_global[1]) ;
+    v_global[1] = sin(-my_position[2])*(v_global[0]) + cos(-my_position[2])*(v_global[1]) ;
 }
+
 
 void migration_urge(void)
 {
@@ -375,7 +374,7 @@ void reynolds_rules() {
 
 		if(dist < RULE2_THRESHOLD && flockmates[k]){
 			for (j=0;j<2;j++) {
-				dispersion[j] -= 1.0/(relative_pos[k][j]);
+				dispersion[j] -= (relative_pos[k][j]);
 			}
 		}
 	}	
@@ -432,24 +431,30 @@ void sim_receive_message(void)
 		sscanf(inbuffer,"%d#%d", &other_robot_flock_id, &other_robot_id);
 
 		// check if message is my own (caused by reflection)
-		if(other_robot_id != robot_id){
-			double y = message_direction[2];
-			double x = message_direction[1];
 
-			theta =	-atan2(y,x);
-			theta = theta + my_position[2]; // find the relative theta;
-			range = sqrt((1/message_rssi));
-			
-			// Get position update
+		if(other_robot_id != robot_id){
+			double x = - message_direction[2]; // Changed by Hugo (20.11.18)
+			double y = - message_direction[1]; // Changed by Hugo (20.11.18)
+
+                  theta = atan2(y,x); // changed by Hugo (20.11.18)
+                  theta =(theta<0? theta+2*M_PI:theta);// theta between [0,2*pi]
+                  theta = (theta>2*M_PI? theta-2*M_PI:theta);
+                  if(robot_id == 0 && VERBOSE){printf("[id]: %d [x]: %f [y]: %f [theta]: %f\n",other_robot_id,x,y,theta);}
+		range = sqrt((1/message_rssi));
+		
+			// Update the prev position
 			prev_relative_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
 			prev_relative_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
-
-			relative_pos[other_robot_id][0] = range*cos(theta);          // relative x pos
-			relative_pos[other_robot_id][1] = -1.0 * range*sin(theta);   // relative y pos
+			prev_relative_pos[other_robot_id][2] = relative_pos[other_robot_id][2];
+			// Set relative location
+			relative_pos[other_robot_id][0] = range*cos(theta);  // relative x pos
+			relative_pos[other_robot_id][1] = range*sin(theta);   // relative y pos
+			relative_pos[other_robot_id][2] = theta;
 		
-			relative_speed[other_robot_id][0] = relative_speed[other_robot_id][0]*0.0 + 1.0*(1/DELTA_T)*(relative_pos[other_robot_id][0]-prev_relative_pos[other_robot_id][0]);
-			relative_speed[other_robot_id][1] = relative_speed[other_robot_id][1]*0.0 + 1.0*(1/DELTA_T)*(relative_pos[other_robot_id][1]-prev_relative_pos[other_robot_id][1]);		
+			relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
+            		relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
 			
+		
 			// if range < 0.25, consider it as part of my flock 
 			if(range < MAX_COMMUNICATION_DIST){
 				flockmates[other_robot_id] = 1;
@@ -499,7 +504,7 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int max_sens) {  //
   		}
   		
 
-		wm = (1 - wb) / (1 + REYN_MIGR_RATIO);
+		wm = (1 - wb) / (float)(1 + REYN_MIGR_RATIO);
 		wr = REYN_MIGR_RATIO *  wm;
   		
 	}
@@ -598,6 +603,10 @@ int main(){
 
 		if(MIGRATORY_URGE){
 			migration_urge();
+			if(robot_id == 2){
+			float angle = atan2(speed[robot_id][1],speed[robot_id][0]);
+  			printf("angle = %f\n",angle);
+			}
 			compute_wheel_speeds(&mmsl, &mmsr);
 
 		}		
@@ -606,7 +615,13 @@ int main(){
 		// Set final speed
         msl = set_final_speed(bmsl,  rmsl,  mmsl,  max_sens);
 		msr = set_final_speed(bmsr,  rmsr,  mmsr, max_sens);
-				  
+		printf("-----------------------------------------------\n");
+		printf("[bmsl]: %d [mmsl]: %d [rmsl]: %d\n",bmsl,mmsl,rmsl);	  
+		printf("[bmsr]: %d [mmsr]: %d [rmsr]: %d\n",bmsr,mmsr,rmsr);
+		printf("<<<<<<<<<<<>>>>>>>>>>>>>>\n");
+            	printf("[msl]: %d [msr] %d\n",msl,msr);
+		printf("-----------------------------------------------\n");
+
 		// Set speed
 		msl_w = msl*MAX_SPEED_WEB/1000;
 		msr_w = msr*MAX_SPEED_WEB/1000;

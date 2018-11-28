@@ -96,43 +96,6 @@ bool flockmates[FLOCK_SIZE] = {0};
 /*
  * Reset the robot's devices and get its ID
  */
-static void reset() 
-{
-	int i;
-
-	wb_robot_init();
-
-	compass = wb_robot_get_device("compass");
-	wb_compass_enable(compass, 64);
-
-	receiver2 = wb_robot_get_device("receiver2");
-	emitter2 = wb_robot_get_device("emitter2");
-	
-	//get motors
-	left_motor = wb_robot_get_device("left wheel motor");
-	right_motor = wb_robot_get_device("right wheel motor");
-	wb_motor_set_position(left_motor, INFINITY);
-	wb_motor_set_position(right_motor, INFINITY);
-		
-	char s[4]="ps0";
-	for(i=0; i<NB_SENSORS;i++) {
-		ds[i] = wb_robot_get_device(s);	// the device name is specified in the world file
-		s[2]++;				// increases the device number
-	}
-	robot_name = (char*) wb_robot_get_name(); 
-
-	for(i=0;i<NB_SENSORS;i++){
-		  wb_distance_sensor_enable(ds[i],64);
-	}
-	wb_receiver_enable(receiver2,64);
-
-	//Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
-	sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
-	robot_id = robot_id_u%FLOCK_SIZE;	  		    // normalize between 0 and FLOCK_SIZE-1
-	robot_flock_id = (robot_id_u / FLOCK_SIZE) + 1; // flock ID needed for scenario 2
-
-	printf("Reset robot %d :: [id][flock_id]   [%d][%d]\n",robot_id_u, robot_id, robot_flock_id);
-}
 
 
 /*
@@ -246,7 +209,7 @@ void compute_wheel_speeds(int *msl, int *msr)
 	float bearing = atan2(z, x);	  // Orientation of the wanted position
 	
 	// Compute forward control
-	float u = Ku*range*cosf(bearing);
+	float u = Ku*range;//*cosf(bearing);
 	// Compute rotational control
 	float w = Kw*bearing;
 	if(robot_id == 0 && VERBOSE){printf("[u] : %f, [w] : %f [range] : %f\n",u,w,range);}
@@ -275,8 +238,8 @@ void rel2global(float* v_ref, float* v_global){
 	v_global[1] = sin(my_position[2])*(v_global[0]-my_position[0]) + cos(my_position[2])*(v_global[1]-my_position[1]) + my_position[1];
          */
          
-         v_global[0] = cos(my_position[2])*(v_global[0]) - sin(my_position[2])*(v_global[1]) ;
-         v_global[1] = sin(my_position[2])*(v_global[0]) + cos(my_position[2])*(v_global[1]) ;
+         v_global[0] = cos(-my_position[2])*(v_global[0]) - sin(-my_position[2])*(v_global[1]) ;
+         v_global[1] = sin(-my_position[2])*(v_global[0]) + cos(-my_position[2])*(v_global[1]) ;
 }
 
 void migration_urge(void)
@@ -419,7 +382,7 @@ void sim_receive_message(void)
 		// check if message is my own (caused by reflection)
 		if(other_robot_id != robot_id){
 			double x = - message_direction[2]; // Changed by Hugo (20.11.18)
-		double y = - message_direction[1]; // Changed by Hugo (20.11.18)
+			double y = - message_direction[1]; // Changed by Hugo (20.11.18)
 
                   theta = atan2(y,x); // changed by Hugo (20.11.18)
                   theta =(theta<0? theta+2*M_PI:theta);// theta between [0,2*pi]
