@@ -46,7 +46,7 @@ float RULE1_WEIGHT	= 5;  // Weight of aggregation rule. default 0.6/10
 float RULE2_THRESHOLD = 0.12;  	// Threshold to activate dispersion rule. default 0.15
 float RULE2_WEIGHT	= 5.1; // Weight of dispersion rule. default 0.02/10
 
-float RULE3_WEIGHT	= 0.5;  // Weight of consistency rule. default 1.0/10
+float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
 
 #define MIGRATORY_URGE 1    		   // Tells the robots if they should just go forward or move towards a specific migratory direction
 #define REYNOLDS 1
@@ -54,9 +54,9 @@ float RULE3_WEIGHT	= 0.5;  // Weight of consistency rule. default 1.0/10
 
 #define ABS(x) ((x>=0)?(x):-(x))
 
-#define VERBOSE    	1
+#define VERBOSE    	0
 #define VERBOSE_2  	1
-#define ROBOT_DEBUG   	0 // which robot's information to filter out
+#define ROBOT_DEBUG  0 // which robot's information to filter out
 #define OPTIMIZE   	1
 /*Added by Pauline for weights*/
 #define INTIALISATION_STEPS  30000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
@@ -87,12 +87,15 @@ int robot_flock_id;
 
 float relative_pos[FLOCK_SIZE][3];    // relative X, Z, Theta of all robots
 float prev_relative_pos[FLOCK_SIZE][3];    // Previous relative  X, Z, Theta values
+float prev_global_pos[FLOCK_SIZE][2];    // Previous global  X, Z values
+
 float my_position[3];			 // X, Z, Theta of the current robot
 float prev_my_position[3]; 		 // X, Z, Theta of the current robot in the previous time step
 float speed[FLOCK_SIZE][2];   	 // Speeds calculated with Reynold's rules
 float relative_speed[FLOCK_SIZE][2];    // Speeds calculated with Reynold's rules
 
 float migr[2] = {1,0};        	// Migration vector
+
 char* robot_name;
 // tracks which are my flockmates. Myself excluded.
 // 1 : is my flockmate and 0 : isn't my flockmate
@@ -292,19 +295,17 @@ void global2rel(float* v_global, float* v_ref){
     v_ref[0] =   cos(my_position[2])*(v_global[0]) + sin(my_position[2])*(v_global[1]);
     v_ref[1] = - sin(my_position[2])*(v_global[0]) + cos(my_position[2])*(v_global[1]);
 }
-void rel2global(float* v_ref, float* v_global){
 
-	v_global[0] =   cos(-my_position[2])*(v_global[0]) + sin(-my_position[2])*(v_global[1]) ;
-	v_global[1] = - sin(-my_position[2])*(v_global[0]) - cos(-my_position[2])*(v_global[1]) ;
+void rel2global(float* v_ref, float* v_global){
+	v_global[0] =   cos(-my_position[2])*(v_ref[0]) + sin(-my_position[2])*(v_ref[1]) ;
+	v_global[1] = - sin(-my_position[2])*(v_ref[0]) - cos(-my_position[2])*(v_ref[1]) ;
 }
 
 
-void migration_urge(void)
-{
-    //float migr_rel[2] = {0};
 
-    global2rel(migr,speed[robot_id]);
-    
+void migration_urge(void) {
+    //float migr_rel[2] = {0};
+    global2rel(migr,speed[robot_id]);  
 }
 
 
@@ -324,7 +325,7 @@ void reynolds_rules() {
     float dist = 0.0;
    	 
      	//Added by Pauline
-     	speed[robot_id][0] = 0;
+     speed[robot_id][0] = 0;
     speed[robot_id][1] = 0;
     
     // Compute averages over the whole flock
@@ -388,15 +389,21 @@ void reynolds_rules() {
     // Rule 3 - Consistency/Alignment: match the speeds of flockmates
     for (j=0;j<2;j++){
    	 consistency[j] = rel_avg_speed[j];
-   	 if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R3 consistency [%f][%f]\n", consistency[0], consistency[1]); }
-
+   	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R3 consistency [%f][%f]\n", consistency[0], consistency[1]); }
     }
+    /*
+    if(VERBOSE_2 && robot_id == 0) { 
+          printf("Consistency of robot 0 is [%f][%f]\n", consistency[0], consistency[1]); 
+    }
+    if(VERBOSE_2 && robot_id == 1) { 
+          printf("Consistency of robot 1 is [%f][%f]\n", consistency[0], consistency[1]); 
+    }*/
 
     //aggregation of all behaviors with relative influence determined by weights
     for (j=0;j<2;j++){
-   	 speed[robot_id][j] += cohesion[j] * RULE1_WEIGHT;
-   	 speed[robot_id][j] +=  dispersion[j] * RULE2_WEIGHT;
-   	 //speed[robot_id][j] +=  consistency[j] * RULE3_WEIGHT;
+   	 speed[robot_id][j] +=  cohesion[j]    * RULE1_WEIGHT;
+   	 speed[robot_id][j] +=  dispersion[j]  * RULE2_WEIGHT;
+   	 speed[robot_id][j] +=  consistency[j] * RULE3_WEIGHT;
    	 if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("ACC  [%1.7f][%1.7f][%1.7f]\n", cohesion[j] * RULE1_WEIGHT, dispersion[j] * RULE2_WEIGHT, consistency[j] * RULE3_WEIGHT); }
 
     }
@@ -446,7 +453,9 @@ void sim_receive_message(void)
               	theta = (theta>2*M_PI? theta-2*M_PI:theta);
              	 
    	 range = sqrt((1/message_rssi));
-   	 if(robot_id == 0 && VERBOSE_2){printf("[id]: %d [x]: %f [y]: %f [theta]: %f\n",other_robot_id,range*cos(theta),range*sin(theta),theta/M_PI*180);}
+   	 //if(robot_id == 0 && VERBOSE_2){printf("[id]: %d [x]: %f [y]: %f [theta]: %f\n",other_robot_id,range*cos(theta),range*sin(theta),theta/M_PI*180);}
+   		 
+   		 /*
    		 // Update the prev position
    		 prev_relative_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
    		 prev_relative_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
@@ -456,10 +465,41 @@ void sim_receive_message(void)
    		 relative_pos[other_robot_id][1] = range*sin(theta);   // relative y pos
    		 relative_pos[other_robot_id][2] = theta;
    	 
+     	           // relative pos en global
+         	           //rel2global(speed[robot_id], relative_pos[other_robot_id]);
+         	           //faire plutot une autre variable et laisser relative_pos tel quel dans dispersion
    		 relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
-       			 relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
+                      relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
+   		 */
    		 
-   	 
+   	 //New by Pauline: put in global at time step (t-1) and take in global of new ref at time step t
+   	 //need prov_global_pos as global variable, otherwise we lose relative for other computations (maybe put it local in function afterwards)
+   	            // Previous in local 
+   		 global2rel(prev_global_pos[other_robot_id], speed[robot_id]);
+   		 relative_pos[other_robot_id][0] = prev_global_pos[other_robot_id][0];  
+   		 relative_pos[other_robot_id][1] = prev_global_pos[other_robot_id][1]; 
+   		 
+   		 // Update the prev position
+   		 prev_relative_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
+   		 prev_relative_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
+   		 prev_relative_pos[other_robot_id][2] = relative_pos[other_robot_id][2]; //
+   		   		 
+   		 // Set current relative location
+   		 relative_pos[other_robot_id][0] = range*cos(theta);  // relative x pos
+   		 relative_pos[other_robot_id][1] = range*sin(theta);   // relative y pos
+   		 relative_pos[other_robot_id][2] = theta;
+   		   		    	      	      
+     	           // Compute speed in relative coordinates
+   		 relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
+                      relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
+   		 
+   		 // Set relative_pos in global coordinates of this time step (x and y only)
+   		 prev_global_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
+   		 prev_global_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
+   		 rel2global(speed[robot_id],  prev_global_pos[other_robot_id]);
+   		
+   		
+   		
    		 // if range < 0.25, consider it as part of my flock
    		 if(range < MAX_COMMUNICATION_DIST){
    			 flockmates[other_robot_id] = 1;
@@ -629,6 +669,11 @@ int main(){
               	msl = set_final_speed(bmsl,  rmsl,  mmsl,  max_sens);
    	 msr = set_final_speed(bmsr,  rmsr,  mmsr, max_sens);
    	 }
+   	 /*
+   	 if(robot_id == 0) {
+   	       msr = 0; msl = 0;
+   	 }
+   	 */
    	 printf("-----------------------------------------------\n");
    	 printf("[bmsl]: %d [mmsl]: %d [rmsl]: %d\n",bmsl,mmsl,rmsl);      
    	 printf("[bmsr]: %d [mmsr]: %d [rmsr]: %d\n",bmsr,mmsr,rmsr);
