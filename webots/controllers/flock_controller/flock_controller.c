@@ -55,12 +55,13 @@ float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
 #define ABS(x) ((x>=0)?(x):-(x))
 
 #define VERBOSE    	0
-#define VERBOSE_2  	1
-#define ROBOT_DEBUG  0 // which robot's information to filter out
+#define VERBOSE_2  	0
+#define VERBOSE_3  	1
+#define ROBOT_DEBUG  4 // which robot's information to filter out
 #define OPTIMIZE   	1
 /*Added by Pauline for weights*/
 #define INTIALISATION_STEPS  30000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
-#define REYN_MIGR_RATIO  	1 // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
+#define REYN_MIGR_RATIO  	0.5 // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
 #define BRAITENBERG_LOWER_THRESH 350 // below this value, no avoidance
 #define BRAITENBERG_UPPER_THRESH 2000
 #define BRAITENBERG_SPEED_BIAS 300
@@ -72,7 +73,8 @@ WbDeviceTag right_motor; //handler for the right wheel of the robot
 
 //int e_puck_matrix[16] = {17,29,34,10,8,-38,-56,-76,   -72,-58,-36,8,10,36,28,18}; // for obstacle avoidance
 // Changed again in much higher weights
-int e_puck_matrix[16] =   {130,90,60,22,8,-48,-56,-76,   -112,-85,-70,6,20,36,38,28}; // for obstacle avoidance giving priority to a side
+//int e_puck_matrix[16] =   {130,90,60,22,8,-48,-56,-76,   -112,-85,-70,6,20,36,38,28}; // for obstacle avoidance giving priority to a side
+int e_puck_matrix[16] =   {16,9,6,3, -1,-5,-6,-8,   -12,-8,-5,6, 2,4,5,9}; // for obstacle avoidance giving priority to a side
 
 WbDeviceTag ds[NB_SENSORS];    // Handle for the infrared distance sensors
 WbDeviceTag receiver2;   	 // Handle for the receiver node
@@ -257,6 +259,15 @@ void compute_wheel_speeds(int *msl, int *msr)
     limit(msr,MAX_SPEED);
 }
 */
+
+void normalize_speed(int *msl, int *msr) {
+    if(ABS(*msl) > MAX_SPEED || ABS(*msr) > MAX_SPEED){
+      float max = (ABS(*msl)>ABS(*msr)?ABS(*msl):ABS(*msr));
+      *msl = *msl/max * MAX_SPEED;
+      *msr = *msr/max * MAX_SPEED;
+    }
+}
+
 void compute_wheel_speeds(int *msl, int *msr)
 {
     // Compute wanted position from Reynold's speed and current location
@@ -281,15 +292,16 @@ void compute_wheel_speeds(int *msl, int *msr)
     *msl += (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
     *msr += (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
     if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
-
-      if(ABS(*msl) > MAX_SPEED || ABS(*msr) > MAX_SPEED){
-    float max = (ABS(*msl)>ABS(*msr)?ABS(*msl):ABS(*msr));
-    *msl = *msl/max * MAX_SPEED;
-    *msr = *msr/max * MAX_SPEED;
-    }
+    
+    // Avoid saturation
+    
+    normalize_speed(msl, msr);
+    
     if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
 
 }
+
+
 
 void global2rel(float* v_global, float* v_ref){
     v_ref[0] =   cos(my_position[2])*(v_global[0]) + sin(my_position[2])*(v_global[1]);
@@ -298,7 +310,7 @@ void global2rel(float* v_global, float* v_ref){
 
 void rel2global(float* v_ref, float* v_global){
 	v_global[0] =   cos(-my_position[2])*(v_ref[0]) + sin(-my_position[2])*(v_ref[1]) ;
-	v_global[1] = - sin(-my_position[2])*(v_ref[0]) - cos(-my_position[2])*(v_ref[1]) ;
+	v_global[1] = - sin(-my_position[2])*(v_ref[0]) + cos(-my_position[2])*(v_ref[1]) ;
 }
 
 
@@ -475,14 +487,11 @@ void sim_receive_message(void)
    	 //New by Pauline: put in global at time step (t-1) and take in global of new ref at time step t
    	 //need prov_global_pos as global variable, otherwise we lose relative for other computations (maybe put it local in function afterwards)
    	            // Previous in local 
-   		 global2rel(prev_global_pos[other_robot_id], speed[robot_id]);
-   		 relative_pos[other_robot_id][0] = prev_global_pos[other_robot_id][0];  
-   		 relative_pos[other_robot_id][1] = prev_global_pos[other_robot_id][1]; 
+   		 global2rel(prev_global_pos[other_robot_id], prev_relative_pos[robot_id]);
    		 
-   		 // Update the prev position
-   		 prev_relative_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
-   		 prev_relative_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
-   		 prev_relative_pos[other_robot_id][2] = relative_pos[other_robot_id][2]; //
+   		/* prev_relative_pos[other_robot_id][0] = prev_global_pos[other_robot_id][0];  
+   		 prev_relative_pos[other_robot_id][1] = prev_global_pos[other_robot_id][1]; 
+   		 prev_relative_pos[other_robot_id][2] = relative_pos[other_robot_id][2]; */
    		   		 
    		 // Set current relative location
    		 relative_pos[other_robot_id][0] = range*cos(theta);  // relative x pos
@@ -494,9 +503,10 @@ void sim_receive_message(void)
                       relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
    		 
    		 // Set relative_pos in global coordinates of this time step (x and y only)
-   		 prev_global_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
-   		 prev_global_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
-   		 rel2global(speed[robot_id],  prev_global_pos[other_robot_id]);
+   		/* prev_global_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
+   		 prev_global_pos[other_robot_id][1] = relative_pos[other_robot_id][1];*/
+   		 
+   		 rel2global(relative_pos[other_robot_id],  prev_global_pos[other_robot_id]);
    		
    		
    		
@@ -553,8 +563,10 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int max_sens) {  //
    	 wr = REYN_MIGR_RATIO *  wm;
      	 
     }
-
-    if(ROBOT_DEBUG == robot_id && VERBOSE){printf("[wb] [%f] :: [wm] [%f] :: [wr] [%f]\n", wb, wm, wr);}
+    if(VERBOSE_3) {     
+   	 printf("[w_b_s]: %f [w_m_s]: %f [w_r_s]: %f\n", wb * b_speed, wm * m_speed,wr * r_speed);
+     }
+    if(ROBOT_DEBUG == robot_id && VERBOSE_3){printf("[wb] [%f] :: [wm] [%f] :: [wr] [%f]\n", wb, wm, wr);}
 
     final_speed = wb * b_speed + wm * m_speed + wr * r_speed;
     f_computeNot = ~f_computeNot;
@@ -605,6 +617,7 @@ int main(){
    	 max_sens = 0;
    			 
    	 if (BRAITENBERG){
+   		 
    		 /* Braitenberg */
    		 for(i=0;i<NB_SENSORS;i++)
    		 {
@@ -615,17 +628,19 @@ int main(){
    			 // Weighted sum of distance sensor values for Braitenburg vehicle
    			 bmsr += e_puck_matrix[i] * distances[i];
    			 bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
-   		 }
-
+  		 }
+  		 normalize_speed(&bmsr, &bmsl);
+  		 //Il faudrait prendre la différence des 2 et normaliser 
+                      
    		 // Adapt Braitenberg values (empirical tests)
-   		 bmsl/=MIN_SENS; bmsr/=MIN_SENS;
-   		 bmsl+=66; bmsr+=72;
+   		 //bmsl/=MIN_SENS; bmsr/=MIN_SENS;
+   		 //bmsl+=66; bmsr+=72;
 
    		 // add speed bias to ensure we are moving rather fast during avoidance
    		 //bmsl+=400; bmsr +=400;
 
-   		 bmsl = bmsl + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsl + BRAITENBERG_SPEED_BIAS : bmsl;
-   		 bmsr = bmsr + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsr + BRAITENBERG_SPEED_BIAS : bmsr;
+   		 //bmsl = bmsl + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsl + BRAITENBERG_SPEED_BIAS : bmsl;
+   		 //bmsr = bmsr + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsr + BRAITENBERG_SPEED_BIAS : bmsr;
 
     	}    
 
@@ -649,9 +664,10 @@ int main(){
    	 }
 
    	 if(MIGRATORY_URGE){
+               //attention on a remis à 0 dans reynolds et braitenberg!!!!!!!!!!!!!!!!!!!!!
    		 migration_urge();
    		 if(robot_id == 4){
-   		 float angle = atan2(speed[robot_id][1],speed[robot_id][0]);
+   		 float angle = atan2(speed[robot_id][1],speed[robot_id][0]); 
      		 printf("angle = %f\n",angle*180/(M_PI));
    		 }
    		 compute_wheel_speeds(&mmsl, &mmsr);
@@ -674,11 +690,14 @@ int main(){
    	       msr = 0; msl = 0;
    	 }
    	 */
+
+   	 if(VERBOSE) {
    	 printf("-----------------------------------------------\n");
    	 printf("[bmsl]: %d [mmsl]: %d [rmsl]: %d\n",bmsl,mmsl,rmsl);      
    	 printf("[bmsr]: %d [mmsr]: %d [rmsr]: %d\n",bmsr,mmsr,rmsr);
    	 printf("<<<<<<<<<<<>>>>>>>>>>>>>>\n");
        		 printf("[msl]: %d [msr] %d\n",msl,msr);
+            }
    	 printf("-----------------------------------------------\n");
 
    	 // Set speed
