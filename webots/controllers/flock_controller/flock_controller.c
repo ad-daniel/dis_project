@@ -61,7 +61,7 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 #define ROBOT_DEBUG  4 // which robot's information to filter out
 #define OPTIMIZE   	1
 /*Added by Pauline for weights*/
-#define INTIALISATION_STEPS  30000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
+#define INTIALISATION_STEPS  3000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
 #define REYN_MIGR_RATIO  	0.5 // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
 #define BRAITENBERG_LOWER_THRESH 350 // below this value, no avoidance
 #define BRAITENBERG_UPPER_THRESH 2000
