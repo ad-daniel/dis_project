@@ -30,23 +30,24 @@
 /*Webots 2018b*/
 #define MAX_SPEED_WEB 	6.28	// Maximum speed webots
 /*Webots 2018b*/
-#define FLOCK_SIZE     	   5   	   // Size of flock
-#define TIME_STEP      	64      // [ms] Length of time step
+#define FLOCK_SIZE     5   	   // Size of flock
+#define TIME_STEP      64      // [ms] Length of time step
 
-#define AXLE_LENGTH       0.052   	 // Distance between wheels of robot (meters)
-#define SPEED_UNIT_RADS      0.00628    // Conversion factor from speed unit to radian per second
-#define WHEEL_RADIUS      0.0205    // Wheel radius (meters)
-#define DELTA_T   	   	0.064   	 // Timestep (seconds)
+#define AXLE_LENGTH      0.052   	 // Distance between wheels of robot (meters)
+#define SPEED_UNIT_RADS  0.00628    // Conversion factor from speed unit to radian per second
+#define WHEEL_RADIUS     0.0205    // Wheel radius (meters)
+#define DELTA_T   	   0.064   	 // Timestep (seconds)
 
 #define MAX_COMMUNICATION_DIST 0.25
 
 float RULE1_THRESHOLD = 0.1;  	   // Threshold to activate aggregation rule. default 0.201
-float RULE1_WEIGHT	= 5;  // Weight of aggregation rule. default 0.6/10
+//float RULE1_WEIGHT	= 5;  // Weight of aggregation rule. default 0.6/10
 
 float RULE2_THRESHOLD = 0.12;  	// Threshold to activate dispersion rule. default 0.15
-float RULE2_WEIGHT	= 5.1; // Weight of dispersion rule. default 0.02/10
+//float RULE2_WEIGHT	= 5.1; // Weight of dispersion rule. default 0.02/10
 
-float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
+//float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
+float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float weightY;
 
 #define MIGRATORY_URGE 1    		   // Tells the robots if they should just go forward or move towards a specific migratory direction
 #define REYNOLDS 1
@@ -56,7 +57,7 @@ float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
 
 #define VERBOSE    	0
 #define VERBOSE_2  	0
-#define VERBOSE_3  	1
+#define VERBOSE_3  	0
 #define ROBOT_DEBUG  4 // which robot's information to filter out
 #define OPTIMIZE   	1
 /*Added by Pauline for weights*/
@@ -80,8 +81,6 @@ WbDeviceTag ds[NB_SENSORS];    // Handle for the infrared distance sensors
 WbDeviceTag receiver2;   	 // Handle for the receiver node
 WbDeviceTag emitter2;   	 // Handle for the emitter node
 WbDeviceTag compass;
-WbDeviceTag receiver3;
-
 WbDeviceTag receiver3;
 
 int robot_id_u, robot_id;    // Unique and normalized (between 0 and FLOCK_SIZE-1) robot ID
@@ -140,29 +139,30 @@ static void reset()
     }
 
     wb_receiver_enable(receiver2, 64);
-
-    if(OPTIMIZE){
-   	 wb_receiver_enable(receiver3, 64); //Mathilde
-
-    	float weight1; float weight2; float weight3; float weightX; float weightY;
-
-    	while(wb_receiver_get_queue_length(receiver3) > 0){
-        	inbuffer = (char*) wb_receiver_get_data(receiver3);
-        	//printf("%s\n", inbuffer);
-        	sscanf(inbuffer,"%f#%f#%f#%f#%f\n",&weight1,&weight2,&weight3,&weightX,&weightY);
-        	//printf("%.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
-        	//printf("initializing\n");
-        	wb_receiver_next_packet(receiver3);
-    	}
-    	printf("Received from supervisor: %.3f, %.3f, %.3f, %.3f. %.3f\n",weight1,weight2,weight3,weightX,weightY);
-    }
-    
     //Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
     sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
     robot_id = robot_id_u%FLOCK_SIZE;     		 	// normalize between 0 and FLOCK_SIZE-1
     robot_flock_id = (robot_id_u / FLOCK_SIZE) + 1; // flock ID needed for scenario 2
 
-    printf("Reset robot %d :: [id][flock_id]   [%d][%d]\n",robot_id_u, robot_id, robot_flock_id);
+    if(OPTIMIZE){ 
+          wb_receiver_enable(receiver3, 64); //Mathilde
+
+          float weightX; float weightY; 
+          
+          while(wb_receiver_get_queue_length(receiver3) == 0){wb_robot_step(TIME_STEP);}
+          printf("get params\n");
+          while(wb_receiver_get_queue_length(receiver3) > 0){ printf("read params\n");
+            inbuffer = (char*) wb_receiver_get_data(receiver3);
+            //RULE1_WEIGHT = 0.1;RULE2_WEIGHT = 0.1;RULE3_WEIGHT = 1; weightX = (0.01/10); weightY = (0.01/10) ; 
+            printf("%s\n", inbuffer);
+            sscanf(inbuffer,"%f#%f#%f#%f#%f\n",&RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&weightX,&weightY);
+            printf("Received from supervisor : %.3f, %.3f, %.3f, %.3f. %.3f\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY);
+            //printf("initializing\n");
+            wb_receiver_next_packet(receiver3);
+        }
+    }
+    
+    if(VERBOSE){printf("Reset robot %d :: [id][flock_id]   [%d][%d]\n",robot_id_u, robot_id, robot_flock_id);}
 }
 
 
@@ -668,7 +668,7 @@ int main(){
    		 migration_urge();
    		 if(robot_id == 4){
    		 float angle = atan2(speed[robot_id][1],speed[robot_id][0]); 
-     		 printf("angle = %f\n",angle*180/(M_PI));
+     		 if(VERBOSE){printf("angle = %f\n",angle*180/(M_PI));}
    		 }
    		 compute_wheel_speeds(&mmsl, &mmsr);
 
@@ -677,13 +677,13 @@ int main(){
     	/* Added by Pauline*/
    	 // Set final speed
    	 if(count < 100) {
-   	 printf("ONLY REYNOLDS");
- 			 msl = rmsl;
-   		 msr = rmsr;
+   	 //printf("ONLY REYNOLDS");
+               msl = rmsl;
+               msr = rmsr;
    	 } else {
-   	 printf("ALL IS ON");
-              	msl = set_final_speed(bmsl,  rmsl,  mmsl,  max_sens);
-   	 msr = set_final_speed(bmsr,  rmsr,  mmsr, max_sens);
+             //printf("ALL IS ON");
+              msl = set_final_speed(bmsl,  rmsl,  mmsl,  max_sens);
+              msr = set_final_speed(bmsr,  rmsr,  mmsr, max_sens);
    	 }
    	 /*
    	 if(robot_id == 0) {
@@ -698,7 +698,7 @@ int main(){
    	 printf("<<<<<<<<<<<>>>>>>>>>>>>>>\n");
        		 printf("[msl]: %d [msr] %d\n",msl,msr);
             }
-   	 printf("-----------------------------------------------\n");
+   	 //printf("-----------------------------------------------\n");
 
    	 // Set speed
    	 msl_w = msl*MAX_SPEED_WEB/1000;
