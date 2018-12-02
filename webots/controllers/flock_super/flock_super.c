@@ -300,7 +300,7 @@ int main(int argc, char *args[]) {
 	for(;;) {
 		wb_robot_step(TIME_STEP);
 		
-		if (t % 1000 == 0) {
+		if (t % 100 == 0) {
 			for (i=0;i<FLOCK_SIZE;i++) {
 				// Get data
 				loc[i][0] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[0]; // X
@@ -314,7 +314,7 @@ int main(int argc, char *args[]) {
 			//printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: performance %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
 			
 			//Mathilde
-			if(OPTIMIZE){
+			if(OPTIMIZE && t!=0){
                                       nb_repetition += 1; 
                                       fp = fopen("Reynolds_performance.csv" ,"a");
                                       fprintf(fp, "%d,%d,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance);

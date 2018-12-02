@@ -534,9 +534,8 @@ DEF epuck0 E-puck {
   name "epuck0"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"
@@ -560,9 +559,8 @@ DEF epuck1 E-puck {
   name "epuck1"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"
@@ -586,9 +584,8 @@ DEF epuck2 E-puck {
   name "epuck2"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"
@@ -612,9 +609,8 @@ DEF epuck3 E-puck {
   name "epuck3"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"
@@ -638,9 +634,8 @@ DEF epuck4 E-puck {
   name "epuck4"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"

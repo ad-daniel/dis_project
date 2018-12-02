@@ -150,11 +150,10 @@ static void reset()
           float weightX; float weightY; 
           
           while(wb_receiver_get_queue_length(receiver3) == 0){wb_robot_step(TIME_STEP);}
-          printf("get params\n");
-          while(wb_receiver_get_queue_length(receiver3) > 0){ printf("read params\n");
+          
+          while(wb_receiver_get_queue_length(receiver3) > 0){ 
             inbuffer = (char*) wb_receiver_get_data(receiver3);
             //RULE1_WEIGHT = 0.1;RULE2_WEIGHT = 0.1;RULE3_WEIGHT = 1; weightX = (0.01/10); weightY = (0.01/10) ; 
-            printf("%s\n", inbuffer);
             sscanf(inbuffer,"%f#%f#%f#%f#%f\n",&RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&weightX,&weightY);
             printf("Received from supervisor : %.3f, %.3f, %.3f, %.3f. %.3f\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY);
             //printf("initializing\n");
