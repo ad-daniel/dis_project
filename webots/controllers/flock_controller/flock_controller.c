@@ -68,6 +68,7 @@ float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
 
 /*Try other*/
 #define THRESHOLD_BEGIN 200  // threshold: if reynold below then begin with Migration and Braitenberg
+#define BETA_MIGRATION 0.2        // how much of migr_diff to implement during each step 
 
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
@@ -106,6 +107,7 @@ char* robot_name;
 // 1 : is my flockmate and 0 : isn't my flockmate
 bool flockmates[FLOCK_SIZE] = {0};
 
+float migr_diff = 0;  // Difference traveled by each wheel
 
 /*
  * Reset the robot's devices and get its ID
@@ -673,6 +675,10 @@ int main(){
    		 float angle = atan2(speed[robot_id][1],speed[robot_id][0]); 
      		 printf("angle = %f\n",angle*180/(M_PI));
    		 }
+		 
+		 &mmsl -= BETA_MIGRATION * migratory_diff;
+		 &mmsr += BETA_MIGRATION * migratory_diff;
+		 
    		 compute_wheel_speeds(&mmsl, &mmsr);
 
    	 }   	 
@@ -706,6 +712,8 @@ int main(){
             }
    	 printf("-----------------------------------------------\n");
 
+	 migratory_diff += (msl - msl);
+		 
    	 // Set speed
    	 msl_w = msl*MAX_SPEED_WEB/1000;
    	 msr_w = msr*MAX_SPEED_WEB/1000;
