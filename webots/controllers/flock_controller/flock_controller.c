@@ -66,6 +66,9 @@ float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
 #define BRAITENBERG_UPPER_THRESH 2000
 #define BRAITENBERG_SPEED_BIAS 300
 
+/*Try other*/
+#define THRESHOLD_BEGIN 200  // threshold: if reynold below then begin with Migration and Braitenberg
+
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
 WbDeviceTag right_motor; //handler for the right wheel of the robot
@@ -676,15 +679,18 @@ int main(){
    	 
     	/* Added by Pauline*/
    	 // Set final speed
-   	 if(count < 100) {
-   	 printf("ONLY REYNOLDS");
- 			 msl = rmsl;
-   		 msr = rmsr;
-   	 } else {
+   	 while(count < 100) {
+		printf("ONLY REYNOLDS");
+		if(&rmsl + &rmsr < THRESHOLD_BEGIN) {
+			break;
+		}
+ 		msl = rmsl;
+   		msr = rmsr;
+   	 } 
+	 
    	 printf("ALL IS ON");
-              	msl = set_final_speed(bmsl,  rmsl,  mmsl,  max_sens);
+         msl = set_final_speed(bmsl,  rmsl,  mmsl,  max_sens);
    	 msr = set_final_speed(bmsr,  rmsr,  mmsr, max_sens);
-   	 }
    	 /*
    	 if(robot_id == 0) {
    	       msr = 0; msl = 0;
