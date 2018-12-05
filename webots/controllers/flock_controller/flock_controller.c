@@ -95,7 +95,7 @@ float prev_my_position[3]; 		 // X, Z, Theta of the current robot in the previou
 float speed[FLOCK_SIZE][2];   	 // Speeds calculated with Reynold's rules
 float relative_speed[FLOCK_SIZE][2];    // Speeds calculated with Reynold's rules
 
-float migr[2];        	// Migration vector
+float migr[2]; // !!! CHANGE IT IN THE SUPER, NOT HERE !!!
 
 char* robot_name;
 // tracks which are my flockmates. Myself excluded.
