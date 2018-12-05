@@ -596,7 +596,7 @@ DEF epuck2 E-puck {
   ]
 }
 DEF epuck3 E-puck {
-  translation -2.9 0 0.2
+  translation -2.9 0 0.214
   rotation 0 1 0 -1.5700000000112309
   name "epuck3"
   controller "flock_controller"

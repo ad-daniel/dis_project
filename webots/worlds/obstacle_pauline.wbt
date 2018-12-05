@@ -604,7 +604,7 @@ DEF epuck2 E-puck {
 DEF epuck3 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
-  translation -2.9 0 0.2
+  translation -2.9 0 0.214
   rotation 0 1 0 -1.5700000000112309
   name "epuck3"
   controller "flock_controller"
