@@ -67,6 +67,10 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 #define BRAITENBERG_UPPER_THRESH 2000
 #define BRAITENBERG_SPEED_BIAS 300
 
+/*Try other*/
+#define THRESHOLD_BEGIN 200  // threshold: if reynold below then begin with Migration and Braitenberg
+#define BETA_MIGRATION 50        // how much of migr_diff to implement during each step 
+
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
 WbDeviceTag right_motor; //handler for the right wheel of the robot
@@ -101,7 +105,7 @@ char* robot_name;
 // tracks which are my flockmates. Myself excluded.
 // 1 : is my flockmate and 0 : isn't my flockmate
 bool flockmates[FLOCK_SIZE] = {0};
-
+float migr_diff = 0;
 
 /*
  * Reset the robot's devices and get its ID
@@ -666,6 +670,10 @@ int main(){
    		 float angle = atan2(speed[robot_id][1],speed[robot_id][0]); 
      		 if(VERBOSE){printf("angle = %f\n",angle*180/(M_PI));}
    		 }
+   		 /* -> Need to be improved by Pauline
+   		 mmsl -= BETA_MIGRATION * migr_diff;
+		 mmsr += BETA_MIGRATION * migr_diff;
+		 */
    		 compute_wheel_speeds(&mmsl, &mmsr);
 
    	 }   	 
@@ -695,7 +703,7 @@ int main(){
        		 printf("[msl]: %d [msr] %d\n",msl,msr);
             }
    	 //printf("-----------------------------------------------\n");
-
+          migr_diff += msl -msr;
    	 // Set speed
    	 msl_w = msl*MAX_SPEED_WEB/1000;
    	 msr_w = msr*MAX_SPEED_WEB/1000;
