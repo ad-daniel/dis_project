@@ -676,8 +676,8 @@ int main(){
      		 printf("angle = %f\n",angle*180/(M_PI));
    		 }
 		 
-		 &mmsl -= BETA_MIGRATION * migratory_diff;
-		 &mmsr += BETA_MIGRATION * migratory_diff;
+		 mmsl -= BETA_MIGRATION * migr_diff;
+		 mmsr += BETA_MIGRATION * migr_diff;
 		 
    		 compute_wheel_speeds(&mmsl, &mmsr);
 
@@ -687,7 +687,7 @@ int main(){
    	 // Set final speed
    	 while(count < 100) {
 		printf("ONLY REYNOLDS");
-		if(&rmsl + &rmsr < THRESHOLD_BEGIN) {
+		if(rmsl + rmsr < THRESHOLD_BEGIN) {
 			break;
 		}
  		msl = rmsl;
