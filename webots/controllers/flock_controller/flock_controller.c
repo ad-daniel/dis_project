@@ -55,11 +55,11 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 
 #define ABS(x) ((x>=0)?(x):-(x))
 
-#define VERBOSE    	0
-#define VERBOSE_2  	0
-#define VERBOSE_3  	0
-#define ROBOT_DEBUG  4 // which robot's information to filter out
-#define OPTIMIZE   	1
+#define VERBOSE    	 0
+#define VERBOSE_2  	 0
+#define VERBOSE_3  	 0
+#define VERBOSE_4  	 1
+#define ROBOT_DEBUG  0 // which robot's information to filter out
 /*Added by Pauline for weights*/
 #define INTIALISATION_STEPS  3000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
 #define REYN_MIGR_RATIO  	0.5 // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
@@ -84,7 +84,7 @@ WbDeviceTag compass;
 WbDeviceTag receiver3;
 
 int robot_id_u, robot_id;    // Unique and normalized (between 0 and FLOCK_SIZE-1) robot ID
-int robot_flock_id;
+int robot_group;
 
 float relative_pos[FLOCK_SIZE][3];    // relative X, Z, Theta of all robots
 float prev_relative_pos[FLOCK_SIZE][3];    // Previous relative  X, Z, Theta values
@@ -95,7 +95,7 @@ float prev_my_position[3]; 		 // X, Z, Theta of the current robot in the previou
 float speed[FLOCK_SIZE][2];   	 // Speeds calculated with Reynold's rules
 float relative_speed[FLOCK_SIZE][2];    // Speeds calculated with Reynold's rules
 
-float migr[2] = {1,0};        	// Migration vector
+float migr[2]; // !!! CHANGE IT IN THE SUPER, NOT HERE !!!
 
 char* robot_name;
 // tracks which are my flockmates. Myself excluded.
@@ -110,7 +110,7 @@ static void reset()
 {
     int i;
 
-      char *inbuffer; //Mathilde
+    char *inbuffer; //Mathilde
 
     wb_robot_init();
 
@@ -141,27 +141,27 @@ static void reset()
     wb_receiver_enable(receiver2, 64);
     //Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
     sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
-    robot_id = robot_id_u%FLOCK_SIZE;     		 	// normalize between 0 and FLOCK_SIZE-1
-    robot_flock_id = (robot_id_u / FLOCK_SIZE) + 1; // flock ID needed for scenario 2
+    robot_id = robot_id_u % FLOCK_SIZE;       // normalize between 0 and FLOCK_SIZE-1
+    robot_group = (robot_id_u / FLOCK_SIZE);  // group ID needed for scenario 2
 
-    if(OPTIMIZE){ 
-          wb_receiver_enable(receiver3, 64); //Mathilde
+    wb_receiver_enable(receiver3, 64); //Mathilde
 
-          float weightX; float weightY; 
-          
-          while(wb_receiver_get_queue_length(receiver3) == 0){wb_robot_step(TIME_STEP);}
-          
-          while(wb_receiver_get_queue_length(receiver3) > 0){ 
-            inbuffer = (char*) wb_receiver_get_data(receiver3);
-            //RULE1_WEIGHT = 0.1;RULE2_WEIGHT = 0.1;RULE3_WEIGHT = 1; weightX = (0.01/10); weightY = (0.01/10) ; 
-            sscanf(inbuffer,"%f#%f#%f#%f#%f\n",&RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&weightX,&weightY);
-            printf("Received from supervisor : %.3f, %.3f, %.3f, %.3f. %.3f\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY);
-            //printf("initializing\n");
-            wb_receiver_next_packet(receiver3);
-        }
-    }
+	float weightX; float weightY; 
+
+	while(wb_receiver_get_queue_length(receiver3) == 0){wb_robot_step(TIME_STEP);}
+
+	while(wb_receiver_get_queue_length(receiver3) > 0){ 
+	 inbuffer = (char*) wb_receiver_get_data(receiver3);
+	 //RULE1_WEIGHT = 0.1;RULE2_WEIGHT = 0.1;RULE3_WEIGHT = 1; weightX = (0.01/10); weightY = (0.01/10) ; 
+	 sscanf(inbuffer,"%f#%f##%f#%f#%f#%f#%f\n", &migr[0], &migr[1], &RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&weightX,&weightY);
+	 
+	 if(VERBOSE_4 && robot_id == ROBOT_DEBUG){ printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY, migr[0], migr[1]); }
+	 //printf("initializing\n");
+	 wb_receiver_next_packet(receiver3);
+	}
+
     
-    if(VERBOSE){printf("Reset robot %d :: [id][flock_id]   [%d][%d]\n",robot_id_u, robot_id, robot_flock_id);}
+    if(VERBOSE_4 && robot_id == ROBOT_DEBUG){printf("Reset robot %d :: [id: %d][group: %d]\n",robot_id_u, robot_id, robot_group);}
 }
 
 
@@ -335,8 +335,8 @@ void reynolds_rules() {
     int n_flockmates = 0;
     float dist = 0.0;
    	 
-     	//Added by Pauline
-     speed[robot_id][0] = 0;
+    //Added by Pauline
+    speed[robot_id][0] = 0;
     speed[robot_id][1] = 0;
     
     // Compute averages over the whole flock
@@ -360,9 +360,7 @@ void reynolds_rules() {
    		 rel_avg_loc[j] /= n_flockmates;
    	 }
     }
-    else{
-   	 speed[robot_id][0] = 0;
-   	 speed[robot_id][1] = 0;   	 
+    else{ 
    	 return; // no flockmates, no reynolds to be done
     }
     
@@ -428,7 +426,7 @@ void reynolds_rules() {
 void sim_send_message(void)  
 {
     char message[10];
-    sprintf(message,"%d#%d", robot_flock_id, robot_id);
+    sprintf(message,"%d#%d", robot_group, robot_id);
     wb_emitter_send(emitter2, message, strlen(message)+1);
 }
 
@@ -444,26 +442,25 @@ void sim_receive_message(void)
     double range;
     char *inbuffer;    // Buffer for the receiver node
     int other_robot_id;
-    int other_robot_flock_id;
+    int other_robot_group;
 
     while (wb_receiver_get_queue_length(receiver2) > 0) {
    	 inbuffer = (char*) wb_receiver_get_data(receiver2);
    	 message_direction = wb_receiver_get_emitter_direction(receiver2);
    	 message_rssi = wb_receiver_get_signal_strength(receiver2);
    	 // parse message
-   	 sscanf(inbuffer,"%d#%d", &other_robot_flock_id, &other_robot_id);
+   	 sscanf(inbuffer,"%d#%d", &other_robot_group, &other_robot_id);
 
-   	 // check if message is my own (caused by reflection)
+   	 // check if message is my own (caused by reflection) and if it belongs to my group
+   	 if((other_robot_id != robot_id) && (other_robot_group == robot_group)){
+   	  double x = - message_direction[2]; // Changed by Hugo (20.11.18)
+   	  double y = - message_direction[1]; // Changed by Hugo (20.11.18)
 
-   	 if(other_robot_id != robot_id){
-   		 double x = - message_direction[2]; // Changed by Hugo (20.11.18)
-   		 double y = - message_direction[1]; // Changed by Hugo (20.11.18)
-
-              	theta = atan2(y,x); // changed by Hugo (20.11.18)
-              	theta =(theta<0? theta+2*M_PI:theta);// theta between [0,2*pi]
-              	theta = (theta>2*M_PI? theta-2*M_PI:theta);
+      theta = atan2(y,x); // changed by Hugo (20.11.18)
+      theta =(theta<0? theta+2*M_PI:theta);// theta between [0,2*pi]
+      theta = (theta>2*M_PI? theta-2*M_PI:theta);
              	 
-   	 range = sqrt((1/message_rssi));
+   	  range = sqrt((1/message_rssi));
    	 //if(robot_id == 0 && VERBOSE_2){printf("[id]: %d [x]: %f [y]: %f [theta]: %f\n",other_robot_id,range*cos(theta),range*sin(theta),theta/M_PI*180);}
    		 
    		 /*
@@ -486,40 +483,40 @@ void sim_receive_message(void)
    	 //New by Pauline: put in global at time step (t-1) and take in global of new ref at time step t
    	 //need prov_global_pos as global variable, otherwise we lose relative for other computations (maybe put it local in function afterwards)
    	            // Previous in local 
-   		 global2rel(prev_global_pos[other_robot_id], prev_relative_pos[robot_id]);
+      global2rel(prev_global_pos[other_robot_id], prev_relative_pos[robot_id]);
    		 
    		/* prev_relative_pos[other_robot_id][0] = prev_global_pos[other_robot_id][0];  
    		 prev_relative_pos[other_robot_id][1] = prev_global_pos[other_robot_id][1]; 
    		 prev_relative_pos[other_robot_id][2] = relative_pos[other_robot_id][2]; */
    		   		 
-   		 // Set current relative location
-   		 relative_pos[other_robot_id][0] = range*cos(theta);  // relative x pos
-   		 relative_pos[other_robot_id][1] = range*sin(theta);   // relative y pos
-   		 relative_pos[other_robot_id][2] = theta;
+      // Set current relative location
+   	  relative_pos[other_robot_id][0] = range*cos(theta);  // relative x pos
+   	  relative_pos[other_robot_id][1] = range*sin(theta);   // relative y pos
+   	  relative_pos[other_robot_id][2] = theta;
    		   		    	      	      
-     	           // Compute speed in relative coordinates
-   		 relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
-                      relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
+      // Compute speed in relative coordinates
+   	  relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
+      relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
    		 
-   		 // Set relative_pos in global coordinates of this time step (x and y only)
-   		/* prev_global_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
-   		 prev_global_pos[other_robot_id][1] = relative_pos[other_robot_id][1];*/
+      // Set relative_pos in global coordinates of this time step (x and y only)
+   	  /* prev_global_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
+   	  prev_global_pos[other_robot_id][1] = relative_pos[other_robot_id][1];*/
    		 
-   		 rel2global(relative_pos[other_robot_id],  prev_global_pos[other_robot_id]);
+   	  rel2global(relative_pos[other_robot_id],  prev_global_pos[other_robot_id]);
    		
    		
    		
-   		 // if range < 0.25, consider it as part of my flock
-   		 if(range < MAX_COMMUNICATION_DIST){
-   			 flockmates[other_robot_id] = 1;
-   		 }
-   	 }
+   	  // if range < 0.25, consider it as part of my flock
+   	  if(range < MAX_COMMUNICATION_DIST){
+   	   flockmates[other_robot_id % FLOCK_SIZE] = 1;
+   	  }
+   	}
 
    	 wb_receiver_next_packet(receiver2);
     }
 
     if(VERBOSE && (ROBOT_DEBUG == robot_id)){
-   	 printf("[%d] has flockmates ", robot_id);
+   	 printf("[%d] of ID [%d] has flockmates ", robot_id, robot_group);
    	 for(int i = 0;i<FLOCK_SIZE;i++){
    		 if(flockmates[i]){
    			 printf("[%d]", i);
