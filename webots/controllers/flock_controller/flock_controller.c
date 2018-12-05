@@ -153,15 +153,15 @@ static void reset()
 	while(wb_receiver_get_queue_length(receiver3) > 0){ 
 	 inbuffer = (char*) wb_receiver_get_data(receiver3);
 	 //RULE1_WEIGHT = 0.1;RULE2_WEIGHT = 0.1;RULE3_WEIGHT = 1; weightX = (0.01/10); weightY = (0.01/10) ; 
-	 sscanf(inbuffer,"%f#%f#%f#%f#%f\n",&RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&weightX,&weightY);
+	 sscanf(inbuffer,"%f#%f##%f#%f#%f#%f#%f\n", &migr[0], &migr[1], &RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&weightX,&weightY);
 	 
-	 if(VERBOSE && robot_id == ROBOT_DEBUG){ printf("Received from supervisor : %.3f, %.3f, %.3f, %.3f. %.3f\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY); }
+	 if(VERBOSE_4 && robot_id == ROBOT_DEBUG){ printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY, migr[0], migr[1]); }
 	 //printf("initializing\n");
 	 wb_receiver_next_packet(receiver3);
 	}
 
     
-    if(VERBOSE_4 && robot_id == ROBOT_DEBUG){printf("Reset robot %d :: [id][flock_id]   [%d][%d]\n",robot_id_u, robot_id, robot_group);}
+    if(VERBOSE_4 && robot_id == ROBOT_DEBUG){printf("Reset robot %d :: [id: %d][group: %d]\n",robot_id_u, robot_id, robot_group);}
 }
 
 
