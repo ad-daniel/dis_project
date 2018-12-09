@@ -14,8 +14,8 @@ nb_simul = 0;
 
 while Reynolds_perf < 0
     disp(errmsg); 
-    [Reynolds_perf, errmsg] = fopen('Reynolds_performance WEIGHT 1 and 2.csv', 'r'); 
-    performances = csvread('Reynolds_performance WEIGHT 1 and 2.csv');
+    [Reynolds_perf, errmsg] = fopen('Reynolds_performance_05.12.csv', 'r'); 
+    performances = csvread('Reynolds_performance_05.12.csv');
     [M,N]=size(performances); 
     nb_steps_per_simul = max(performances(:,1)); 
     nb_simul = sum(performances(:,1)==nb_steps_per_simul); 
@@ -118,7 +118,6 @@ compromise_mean = sum(comp_mean(:,1:3) ./ best_mean_value(1:3),2);
 [compr_mean_sorted, I_sorted] = sort(compromise_mean, 'descend'); 
 best_compromise_mean = [compr_mean_sorted(1:nb_compr,1), I_sorted(1:nb_compr,1)]; 
 
-figure; 
 fprintf("\n Best compromise means are : \n");
 for(i=1:nb_compr)
     fprintf("%d for simulation %d \n",best_compromise_mean(i), I_sorted(i));

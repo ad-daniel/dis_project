@@ -59,6 +59,7 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 #define VERBOSE_2  	 0
 #define VERBOSE_3  	 0
 #define VERBOSE_4  	 1
+#define VERBOSE_M      1
 #define ROBOT_DEBUG  0 // which robot's information to filter out
 /*Added by Pauline for weights*/
 #define INTIALISATION_STEPS  3000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
@@ -152,13 +153,14 @@ static void reset()
 
 	while(wb_receiver_get_queue_length(receiver3) > 0){ 
 	 inbuffer = (char*) wb_receiver_get_data(receiver3);
-	 //RULE1_WEIGHT = 0.1;RULE2_WEIGHT = 0.1;RULE3_WEIGHT = 1; weightX = (0.01/10); weightY = (0.01/10) ; 
 	 sscanf(inbuffer,"%f#%f##%f#%f#%f#%f#%f\n", &migr[0], &migr[1], &RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&weightX,&weightY);
 	 
-	 if(VERBOSE_4 && robot_id == ROBOT_DEBUG){ printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY, migr[0], migr[1]); }
+	 if(VERBOSE_M && robot_id == ROBOT_DEBUG){ printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY, migr[0], migr[1]); }
 	 //printf("initializing\n");
 	 wb_receiver_next_packet(receiver3);
 	}
+	//printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY, migr[0], migr[1]);
+
 
     
     if(VERBOSE_4 && robot_id == ROBOT_DEBUG){printf("Reset robot %d :: [id: %d][group: %d]\n",robot_id_u, robot_id, robot_group);}
@@ -463,31 +465,8 @@ void sim_receive_message(void)
    	  range = sqrt((1/message_rssi));
    	 //if(robot_id == 0 && VERBOSE_2){printf("[id]: %d [x]: %f [y]: %f [theta]: %f\n",other_robot_id,range*cos(theta),range*sin(theta),theta/M_PI*180);}
    		 
-   		 /*
-   		 // Update the prev position
-   		 prev_relative_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
-   		 prev_relative_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
-   		 prev_relative_pos[other_robot_id][2] = relative_pos[other_robot_id][2];
-   		 // Set relative location
-   		 relative_pos[other_robot_id][0] = range*cos(theta);  // relative x pos
-   		 relative_pos[other_robot_id][1] = range*sin(theta);   // relative y pos
-   		 relative_pos[other_robot_id][2] = theta;
-   	 
-     	           // relative pos en global
-         	           //rel2global(speed[robot_id], relative_pos[other_robot_id]);
-         	           //faire plutot une autre variable et laisser relative_pos tel quel dans dispersion
-   		 relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
-                      relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
-   		 */
-   		 
-   	 //New by Pauline: put in global at time step (t-1) and take in global of new ref at time step t
-   	 //need prov_global_pos as global variable, otherwise we lose relative for other computations (maybe put it local in function afterwards)
    	            // Previous in local 
       global2rel(prev_global_pos[other_robot_id], prev_relative_pos[robot_id]);
-   		 
-   		/* prev_relative_pos[other_robot_id][0] = prev_global_pos[other_robot_id][0];  
-   		 prev_relative_pos[other_robot_id][1] = prev_global_pos[other_robot_id][1]; 
-   		 prev_relative_pos[other_robot_id][2] = relative_pos[other_robot_id][2]; */
    		   		 
       // Set current relative location
    	  relative_pos[other_robot_id][0] = range*cos(theta);  // relative x pos
