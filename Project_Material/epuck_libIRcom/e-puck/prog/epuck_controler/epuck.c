@@ -31,7 +31,8 @@ typedef enum { false = 0, true = !false } bool;
 //#include "./a_d/advance_ad_scan/e_ad_conv.h"
 
 			/*To Change */
-static const int robot_id = 1;
+static const int robot_id = 0
+;
 static const int robot_group = 0;
 
 			/*Constantes*/
@@ -39,7 +40,7 @@ static const int robot_group = 0;
 #define NB_LEDS			8
 #define MIN_SENS      	350 	// Minimum sensibility value
 #define MAX_SENS      	4096	// Maximum sensibility value
-#define MAX_SPEED     	800 	// Maximum speed
+#define MAX_SPEED     	300 	// Maximum speed
 #define FLOCK_SIZE     	4   	// Size of flock
 #define M_PI 3.14159265358979323846
 
@@ -55,22 +56,21 @@ static const int robot_group = 0;
 #define RULE3_WEIGHT 	0.1
 static float migr[2] = {1.,0.};
 
-#define INTIALISATION_STEPS  		30000  		//30 secondes at the beginning to form flock and align with migration (before infinite loop)
 #define REYN_MIGR_RATIO  			0.5 		// TO TUNE: ratio of weights between Reynolds and Migration urge  	 
 #define BRAITENBERG_UPPER_THRESH	2000
 #define BRAITENBERG_LOWER_THRESH 	150 		// below this value, no avoidance
 #define BRAITENBERG_SPEED_BIAS		300
-#define NO_SPEED					1			// The robot does not move -> for test only
-#define WAIT_FOR_SENDING			1			// Avoid to send a to large rate of message -> Problem: Large number of receiver failed... 
+#define WAIT_FOR_SENDING			0			// Avoid to send a to large rate of message -> Problem: Large number of receiver failed... 
+#define WAIT_FOR_SENDING_RESET		0			// Avoid to send a to large rate of message -> Problem: Large number of receiver failed... 
 
 // Possible mode
-#define MODE_BRAI	0
-#define MODE_REYN	1
-#define MODE_MIGR	2
-#define MODE_ALL	3
-
-//Active comunication via Bluetooth
-#define VERBOSE 1
+#define MODE_PAUSE 		0
+#define MODE_NO_SPEED 	1
+#define MODE_BRAI		2
+#define MODE_REYN		3
+#define MODE_MIGR		4
+#define MODE_JOINT		5
+#define MODE_ALL		6
 
 // Macro
 #define ABS(x) ((x>=0)?(x):-(x))
@@ -95,9 +95,12 @@ static bool flockmates[FLOCK_SIZE] = {0};
 static float migr_diff = 0;
 
 // Flags
+static bool flag_verbose = true;
 static bool flag_brai = false;
 static bool flag_reyn = false;
 static bool flag_migr = false;
+static bool flag_joint = false;
+static bool flag_speed = true;
 static bool flag_obstacle = false;
 
 int getselector()
@@ -124,7 +127,7 @@ int reset()
 	}
 	
 	// Send message via Bluetooth
-	if(VERBOSE){
+	if(flag_verbose){
 	sprintf(buffer,"[Robot id: %d] [Robot Group: %d]<< Reset Start >>\r\n",robot_id,robot_group);
 	e_send_uart1_char(buffer, strlen(buffer));
 	}
@@ -138,30 +141,55 @@ int reset()
 	
     // rely on selector to define the role
     int selector = getselector();
-	
+	if(WAIT_FOR_SENDING_RESET){
+		int j;
+		for(j = 0; j < 15000*robot_id; j++)	asm("nop");}
 	return(selector);
 }
 
 void set_mode(int mode){
 	switch(mode){
+		case MODE_PAUSE:
+			flag_verbose = false;
+			flag_speed = false;
+		break;
+		case MODE_NO_SPEED:
+			flag_brai = false;
+			flag_reyn = false;
+			flag_migr = false;
+			flag_speed = false;
+			if(flag_verbose){
+			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode No_SPEED>>\r\n",robot_id, robot_group);
+			btcomSendString(buffer);	
+			}
+		break;
 		case MODE_BRAI:
 			flag_brai = true;
-			if(VERBOSE){
+			if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Brai>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
 		break;
 		case MODE_REYN:
 			flag_reyn = true;
-			if(VERBOSE){
+			if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Reyn>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
 		break;
 		case MODE_MIGR:
 			flag_migr = true;
-			if(VERBOSE){
+			if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Migr>>\r\n",robot_id, robot_group);
+			btcomSendString(buffer);	
+			}
+		break;
+		case MODE_JOINT:
+			flag_brai = true;
+			flag_migr = true;
+			flag_joint = true;
+			if(flag_verbose){
+			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Joint>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
 		break;
@@ -169,13 +197,13 @@ void set_mode(int mode){
 			flag_brai = true;
 			flag_reyn = true;
 			flag_migr = true;
-			if(VERBOSE){
+			if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode All>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
 		break;
 		default:
-		if(VERBOSE){
+		if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Unknown>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
@@ -185,6 +213,7 @@ void set_mode(int mode){
 		}	
 		break;
 	}
+	flag_verbose = false;
 }
 
 void update_self_motion(int msl, int msr) {
@@ -336,7 +365,7 @@ void epuck_send_message(void)
 {
 	long int message;
 	message = (robot_id + (robot_group<<3));
-	if(VERBOSE){
+	if(flag_verbose){
 		sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_send_message: Begin>>\r\n",robot_id, robot_group);
 		btcomSendString(buffer);	
 	}
@@ -346,7 +375,7 @@ void epuck_send_message(void)
 	int j;
 	if(WAIT_FOR_SENDING){
 		for(j = 0; j < 15000; j++)	asm("nop");
-		if(VERBOSE){
+		if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_send_message: End>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 		}
@@ -356,7 +385,7 @@ void epuck_receive_message(void){
 	
 	bool read_buffer = true;
     int loop_time = 0;
-    if(VERBOSE){
+    if(flag_verbose){
 		sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: Begin>>\r\n",robot_id, robot_group);
 		btcomSendString(buffer);	
 	}
@@ -366,7 +395,7 @@ void epuck_receive_message(void){
 	    ircomPopMessage(&imsg);
 	    if (imsg.error == 0)
 	    {
-			if(VERBOSE){
+			if(flag_verbose){
 				sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: imsg.error = 0>>\r\n",robot_id, robot_group);
 				btcomSendString(buffer);	
 			}
@@ -391,7 +420,7 @@ void epuck_receive_message(void){
 				relative_pos[other_robot_id][1] = range*sin(theta);   // relative y pos
 				relative_pos[other_robot_id][2] = theta;
 				
-				if(VERBOSE){
+				if(flag_verbose){
 					sprintf(buffer, "Receive successful : [%d]  - distance=%f \t direction=%f \r\n", other_robot_id, (double)range,(double)theta);
 					btcomSendString(buffer);
 				}
@@ -412,7 +441,7 @@ void epuck_receive_message(void){
 	    else if (imsg.error > 0)
 	    {
 		// error in transmission
-			if(VERBOSE){
+			if(flag_verbose){
 				sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: imsg.error > 0>>\r\n",robot_id, robot_group);
 				btcomSendString(buffer);	
 			}	
@@ -420,7 +449,7 @@ void epuck_receive_message(void){
 		else
 		{
 			// else imsg.error == -1 -> no message available in the queue
-			if(VERBOSE){
+			if(flag_verbose){
 				sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: imsg.error = -1>>\r\n",robot_id, robot_group);
 				btcomSendString(buffer);	
 			}
@@ -428,7 +457,7 @@ void epuck_receive_message(void){
 		}
 	loop_time++;
 	}
-	if(VERBOSE){
+	if(flag_verbose){
 		sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: End >>\r\n",robot_id, robot_group);
 		btcomSendString(buffer);	
 	}
@@ -528,9 +557,9 @@ int main(){
 		if(flag_migr){
 			//attention on a remis à 0 dans reynolds et braitenberg!!!!!!!!!!!!!!!!!!!!!
 			migration_urge();
-			if(!flag_obstacle){
+			/*if(!flag_obstacle){
 			mmsl -= BETA_MIGRATION * migr_diff;
-			mmsr += BETA_MIGRATION * migr_diff;}
+			mmsr += BETA_MIGRATION * migr_diff;}*/
 			compute_wheel_speeds(&mmsl, &mmsr);
 		}   	 
 
@@ -550,7 +579,7 @@ int main(){
 
 		// A Changer Hugo
 		// Set speed
-		if(NO_SPEED){
+		if(!flag_speed){
 			msl = 0;
 			msr = 0;
 		}
