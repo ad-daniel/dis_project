@@ -58,15 +58,19 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 #define VERBOSE    	 0
 #define VERBOSE_2  	 0
 #define VERBOSE_3  	 0
-#define VERBOSE_4  	 1
-#define VERBOSE_M      1
-#define ROBOT_DEBUG  0 // which robot's information to filter out
+#define VERBOSE_4  	 0
+#define VERBOSE_5           0
+#define ROBOT_DEBUG  4 // which robot's information to filter out
 /*Added by Pauline for weights*/
 #define INTIALISATION_STEPS  3000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
 #define REYN_MIGR_RATIO  	0.5 // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
-#define BRAITENBERG_LOWER_THRESH 350 // below this value, no avoidance
+#define BRAITENBERG_LOWER_THRESH 150 // below this value, no avoidance
 #define BRAITENBERG_UPPER_THRESH 2000
 #define BRAITENBERG_SPEED_BIAS 300
+
+/*Try other*/
+#define THRESHOLD_BEGIN 200  // threshold: if reynold below then begin with Migration and Braitenberg
+#define BETA_MIGRATION 1        // how much of migr_diff to implement during each step 
 
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
@@ -86,6 +90,7 @@ WbDeviceTag receiver3;
 
 int robot_id_u, robot_id;    // Unique and normalized (between 0 and FLOCK_SIZE-1) robot ID
 int robot_group;
+int flag_obstacle = 0;
 
 float relative_pos[FLOCK_SIZE][3];    // relative X, Z, Theta of all robots
 float prev_relative_pos[FLOCK_SIZE][3];    // Previous relative  X, Z, Theta values
@@ -102,7 +107,7 @@ char* robot_name;
 // tracks which are my flockmates. Myself excluded.
 // 1 : is my flockmate and 0 : isn't my flockmate
 bool flockmates[FLOCK_SIZE] = {0};
-
+float migr_diff = 0;
 
 /*
  * Reset the robot's devices and get its ID
@@ -524,16 +529,22 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int max_sens) {  //
  
     if(f_computeNot){
      	 //wb prop to max_sens	and	wr = REYN_MIGR_RATIO * wm	and	wr + wb + wm = 1
+     	if(ROBOT_DEBUG == robot_id && VERBOSE_5){printf("[max_sensor] [%d] \n",max_sens);}
+
+         if(ROBOT_DEBUG == robot_id && VERBOSE_5){printf("[log(max_sensor)] [%f] \n",log(max_sens));}
+
      	 
      	 if (log(max_sens) > log(BRAITENBERG_LOWER_THRESH)){
      		 wb = log(max_sens) / log(BRAITENBERG_UPPER_THRESH); // Above upper threshold, do only avoidance;
      		 wb = wb > 1.0 ? 1.0 : wb;
+     		 flag_obstacle = 1;
      	 }
      	 else{
      		 wb = 0.0;
+     		 flag_obstacle = 0;
      	 }
      	 
-
+         if(ROBOT_DEBUG == robot_id && VERBOSE_5){printf("[flag_obstacle] [%d] \n",flag_obstacle);}
    	 wm = (1 - wb) / (float)(1 + REYN_MIGR_RATIO);
    	 wr = REYN_MIGR_RATIO *  wm;
      	 
@@ -641,11 +652,21 @@ int main(){
    	 if(MIGRATORY_URGE){
                //attention on a remis à 0 dans reynolds et braitenberg!!!!!!!!!!!!!!!!!!!!!
    		 migration_urge();
-   		 if(robot_id == 4){
+   		 if(robot_id == ROBOT_DEBUG){
    		 float angle = atan2(speed[robot_id][1],speed[robot_id][0]); 
      		 if(VERBOSE){printf("angle = %f\n",angle*180/(M_PI));}
    		 }
+   		if(!flag_obstacle){
+   		 mmsl -= BETA_MIGRATION * migr_diff;
+		 mmsr += BETA_MIGRATION * migr_diff;}
+		 /*if(!flag_obstacle){
+		 mmsl += (int) BETA_MIGRATION * my_position[1];
+		 mmsr -= (int) BETA_MIGRATION * my_position[1];
+		 }*/
+		if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("My position [%f][%f]\n",my_position[0], my_position[1]); }
+                  if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("Migration difference[%d][%d]\n", mmsl, mmsr); }
    		 compute_wheel_speeds(&mmsl, &mmsr);
+   		if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("Migration [%d][%d]\n", mmsl, mmsr); }
 
    	 }   	 
    	 
@@ -674,7 +695,8 @@ int main(){
        		 printf("[msl]: %d [msr] %d\n",msl,msr);
             }
    	 //printf("-----------------------------------------------\n");
-
+          migr_diff += msl -msr;
+          if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("Diff [%f]\n", migr_diff); }
    	 // Set speed
    	 msl_w = msl*MAX_SPEED_WEB/1000;
    	 msr_w = msr*MAX_SPEED_WEB/1000;

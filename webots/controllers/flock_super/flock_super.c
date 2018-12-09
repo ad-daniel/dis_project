@@ -45,7 +45,9 @@ int t;
 
 double **data_glob;//Mathilde
 double **data_line;
-
+// good results ...
+float default_weight[5] = { 0.1, 0.1, 0, 0.01, 0.01 };
+  
 
 /*
 * Daniel
@@ -56,14 +58,11 @@ void send_default_params(){
 
   // send default parameters
   
-  // good results ...
-  float data_glob[5] = { 0.1, 0.1, 1.0, 0.01, 0.01 };
   // Also good results ...
   // float data_glob[5] = { }
 
-
-  printf("Sending default parameters [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n", data_glob[0], data_glob[1], data_glob[2], data_glob[3], data_glob[4], migrx, migrz);
-  sprintf(message, "%f#%f##%f#%f#%f#%f#%f\n", migrx, migrz, data_glob[0], data_glob[1], data_glob[2], data_glob[3], data_glob[4]);
+  printf("Sending default parameters [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n", default_weight[0], default_weight[1], default_weight[2], default_weight[3], default_weight[4], migrx, migrz);
+  sprintf(message, "%f#%f##%f#%f#%f#%f#%f\n", migrx, migrz, default_weight[0], default_weight[1], default_weight[2], default_weight[3], default_weight[4]);
 
   wb_emitter_send(emitter, message, strlen(message) + 1);
 }
