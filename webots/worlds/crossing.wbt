@@ -1,4 +1,4 @@
-#VRML_SIM R2018a utf8
+#VRML_SIM R2018b utf8
 WorldInfo {
   info [
     "Description"
@@ -244,78 +244,248 @@ DEF epuck0 E-puck {
   hidden position_0_1 1.535789298512995e-8
   translation -0.1 0 0
   rotation 0 1 0 1.57
-  controller "flock_controller"
   name "epuck0"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }
 DEF epuck1 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
   translation -0.1 0 -0.1
   rotation 0 1 0 1.57
-  controller "flock_controller"
   name "epuck1"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }
 DEF epuck2 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
   translation -0.1 0 0.1
   rotation 0 1 0 1.57
-  controller "flock_controller"
   name "epuck2"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }
 DEF epuck3 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
   translation -0.1 0 -0.2
   rotation 0 1 0 1.57
-  controller "flock_controller"
   name "epuck3"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }
 DEF epuck4 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
   translation -0.1 0 0.2
   rotation 0 1 0 1.57
-  controller "flock_controller"
   name "epuck4"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }
 DEF epuck5 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
   translation -1.9 0 0
   rotation 0 1 0 -1.57
-  controller "flock_controller"
   name "epuck5"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }
 DEF epuck6 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
   translation -1.9 0 -0.1
   rotation 0 1 0 -1.57
-  controller "flock_controller"
   name "epuck6"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }
 DEF epuck7 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
   translation -1.9 0 0.1
   rotation 0 1 0 -1.57
-  controller "flock_controller"
   name "epuck7"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }
 DEF epuck8 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
   translation -1.9 0 -0.2
   rotation 0 1 0 -1.57
-  controller "flock_controller"
   name "epuck8"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }
 DEF epuck9 E-puck {
   hidden position_0_0 1.5357847128286672e-8
   hidden position_0_1 1.535789298512995e-8
   translation -1.9 0 0.2
   rotation 0 1 0 -1.57
-  controller "flock_controller"
   name "epuck9"
+  controller "flock_controller"
+  groundSensorsSlot [
+    Receiver {
+      name "receiver3"
+    }
+    Receiver {
+      name "receiver2"
+      type "infra-red"
+      channel 1
+    }
+    Emitter {
+      name "emitter2"
+      type "infra-red"
+      channel 1
+    }
+    Compass {
+    }
+  ]
 }

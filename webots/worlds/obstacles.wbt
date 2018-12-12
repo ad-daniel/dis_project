@@ -527,16 +527,13 @@ Supervisor {
   controller "flock_super"
 }
 DEF epuck0 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 0
   rotation 0 1 0 -1.5700000000112309
   name "epuck0"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"
@@ -553,16 +550,13 @@ DEF epuck0 E-puck {
   ]
 }
 DEF epuck1 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 0.1
   rotation 0 1 0 -1.5700000000112309
   name "epuck1"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"
@@ -579,16 +573,13 @@ DEF epuck1 E-puck {
   ]
 }
 DEF epuck2 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 -0.1
   rotation 0 1 0 -1.5700000000112309
   name "epuck2"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"
@@ -605,16 +596,13 @@ DEF epuck2 E-puck {
   ]
 }
 DEF epuck3 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
-  translation -2.9 0 0.213892
+  translation -2.9 0 0.214
   rotation 0 1 0 -1.5700000000112309
   name "epuck3"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"
@@ -631,16 +619,13 @@ DEF epuck3 E-puck {
   ]
 }
 DEF epuck4 E-puck {
-  hidden position_0_0 1.5357847128286672e-8
-  hidden position_0_1 1.535789298512995e-8
   translation -2.9 0 -0.2
   rotation 0 1 0 -1.5700000000112309
   name "epuck4"
   controller "flock_controller"
   groundSensorsSlot [
-    Receiver {
+    DEF receiver3 Receiver {
       name "receiver3"
-      channel 1
     }
     Receiver {
       name "receiver2"

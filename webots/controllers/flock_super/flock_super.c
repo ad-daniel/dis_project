@@ -22,7 +22,10 @@
 #define TIME_STEP	64		// [ms] Length of time step
 #define VMAX        0.1287
 
-#define OPTIMIZE 0
+#define OPTIMIZE    0
+#define READ        0
+#define CREATE      1 
+#define REWRITE     2 
 
 WbNodeRef robs[FLOCK_SIZE];		// Robots nodes
 WbFieldRef robs_trans[FLOCK_SIZE];	// Robots translation fields
@@ -33,15 +36,38 @@ WbDeviceTag emitter;
 float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
 
 int offset;				// Offset of robots number
-float migrx = 0;
-float migrz = -3;			// Migration vector
+float migrx = 1;
+float migrz = 0;			// Migration vector
 float orient_migr; 			// Migration orientation
 int t;
 
 double **data_glob;//Mathilde
 double **data_line;
+// good results ...
+float default_weight[5] = { 0.1, 0.1, 0, 0.01, 0.01 };
+  
+
+/*
+* Daniel
+* Send default parameters if no optimization going on
+*/
+void send_default_params(){           
+  char message[255]; 
+
+  // send default parameters
+  
+  // Also good results ...
+  // float data_glob[5] = { }
+
+  printf("Sending default parameters [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n", default_weight[0], default_weight[1], default_weight[2], default_weight[3], default_weight[4], migrx, migrz);
+  sprintf(message, "%f#%f##%f#%f#%f#%f#%f\n", migrx, migrz, default_weight[0], default_weight[1], default_weight[2], default_weight[3], default_weight[4]);
+
+  wb_emitter_send(emitter, message, strlen(message) + 1);
+}
 
 
+
+/*.....................................................Optimisation...............................................*/
 /*
 * MATHILDE
 * Read csv file and update information in a table, so the parameters can be accessed and send to robots controllers
@@ -76,27 +102,25 @@ void read_csv(int row, int col, char *filename, double **data){
 * Create, read and rewrite line file to avoid changing all the params file at every simul just for 1 line change
 */
 void handle_line_csv(FILE *line_to_read, int action, double line, double **data_l){
-  int read = 0; 
-  int create = 1; 
-  int rewrite = 2; 
   char *name = "Line_to_read.csv";
   
-  if(action == read){
+  if(action == READ){
     line_to_read = fopen(name,"r");
     //printf("Step2\n");
     read_csv(1,1,name, data_l);
-  }else if(action==create){
+  }else if(action==CREATE){
   printf("line number init %f\n", line );
     line_to_read = fopen(name,"w");
     data_line[0][0] = line; 
     //fprintf(line_to_read, "%f,\n", line);
     read_csv(1,1,name, data_l);
-  }else if(action==rewrite){
+  }else if(action==REWRITE){
     line_to_read = fopen(name,"w");
     fprintf(line_to_read, "%f\n", line);
   }  
   fclose(line_to_read);  
 }
+
 
 
 /*
@@ -115,13 +139,14 @@ void test_param(FILE *params, FILE *line_to_read){
   char message[255]; 
     
   /* Indice param, init, resol and final to be changed manually to give the parameter and its range */  
-  int indice_param = 1; //1 for WEIGHT1; 2 for WEIGHT2 etc...
-  float init = 1; float resol = 1; float final = 10;
-  int row = 1 + (final-init)/resol + 1;
+  float init = 1; float resol = 0.5; float final = 10; int nb_param_tuned = 2; 
+  int row = 1 + pow((floor(final-init)/resol + 1),nb_param_tuned);
+  printf("nb lines %d\n", row);
   int col = 5;
   
   //Create a .csv file with the different information about the simulation tested
-  asprintf (&file_name, "Test_parameters_WEIGHT%d_[%.3f,%.3f,%.3f].csv", indice_param, init, resol, final);
+  asprintf (&file_name, "Test_parameters_WEIGHT 1 and 2 Reynolds_[%.3f,%.3f,%.3f].csv", init, resol, final);
+
   
   //Allocate space to store usefull param for the current simulation
   data_glob = (double **)malloc(row * sizeof(double *));
@@ -137,55 +162,62 @@ void test_param(FILE *params, FILE *line_to_read){
   //Create or read file that contains the line we need to read next
   if((line_to_read = fopen("Line_to_read.csv", "r"))){
     printf("Ready to read line file\n");
-    int read = 0; 
-    handle_line_csv(line_to_read, read, 0, data_line);
+    handle_line_csv(line_to_read, READ, 0, data_line);
     //printf("data line value is : %f\n", data_line[0][0]);
     fclose(line_to_read);
   }else{
-    int create = 1; 
     printf("Creating line file\n"); 
-    handle_line_csv(line_to_read, create, (double) line, data_line);
+    handle_line_csv(line_to_read, CREATE, (double) line, data_line);
     //printf("data line value after init is : %f\n", data_line[0][0]);
     fclose(line_to_read);
   }
   
-  //Depending on the existence of the file, read or create + read it, and extract parameters usefull for the current simulation  
+  //Depending on the existence of the parameter file, read or create + read it, and extract parameters usefull for the current simulation  
   if((params = fopen(file_name, "r"))){
-    printf("File already existing\n");	
+      printf("File already existing\n");	
     
-    if(params == NULL) {
-      perror("No line found to read");
-      //printf("No line found to read\n");
-     }
+      if(params == NULL) {
+          perror("No line found to read");
+          //printf("No line found to read\n");
+      }
      
      if( fgets (str, 60, params)!=NULL ) {
        //printf("Should be printing\n");
        read_csv(row, col, file_name, data_glob);
-    }
-    fclose(params);   
+     }
+     
+     fclose(params);   
   }else{
     printf("File creation\n"); 
     params = fopen(file_name, "w");
     fprintf(params, "%d,%d\n", row, col);
     //fprintf(params, "File created\n"); 
-    float i = init; 
+    float i = init; float j = init; float k = init;  
     for(i=init; i<=final; i += resol){
-      weights[indice_param-1] = i;
-      fprintf(params, "%.3f,%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2], weights[3], weights[4]);
+      for(j=init; j<=final; j += resol){
+        //for(k=init; k<=final; k+=resol){
+        //  weights[2] = i/10;
+          weights[1] = i/10;
+          weights[0] = j/10;
+          fprintf(params, "%.3f,%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2], weights[3], weights[4]);
+          //printf("%.3f,%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2], weights[3], weights[4]);
+        //}
+      }
     }
     read_csv(row, col, file_name, data_glob);
     fclose(params);
+    //data_line[0][0] = line; 
   }   
   
   //Send to the robot controller
   int lp = (int)data_line[0][0];
-  printf("Param to be sent %.3f,%.3f,%.3f,%.3f,%.3f\n", data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3], data_glob[lp][4]);
-  sprintf(message, "%f#%f#%f#%f#%f\n", data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3], data_glob[lp][4]);
+  printf("Param to be sent [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n", data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3], data_glob[lp][4], migrx, migrz);
+  sprintf(message, "%f#%f##%f#%f#%f#%f#%f\n", migrx, migrz, data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3], data_glob[lp][4]);
   //printf("%s\n", message);
-  wb_emitter_send(emitter, message, strlen(message) + 1);
+  if(wb_emitter_send(emitter, message, strlen(message) + 1)){printf("Send\n");}
   printf("actual line %f\n", data_line[0][0]);
-  
 }
+/*.............................................End of Optimisation...............................................*/
 
 
 
@@ -271,8 +303,6 @@ int main(int argc, char *args[]) {
   
 	reset();
 
-	printf("Supervisor using urge: [%f][%f]\n", migrx, migrz);
-	
 	// Compute reference fitness values
 	
 	float fit_cohesion;			// Performance metric for cohesion
@@ -286,13 +316,19 @@ int main(int argc, char *args[]) {
 	FILE *line_to_read = NULL; 
 	int nb_repetition = 0; //find a way to count nb of simulation with the same parameters
 	
-	if(OPTIMIZE){ test_param(fparam, line_to_read); }
-
+	if(OPTIMIZE){ 
+		printf("OPTIMIZATION: ACTIVE\n");
+		test_param(fparam, line_to_read);
+	}
+	else{
+		printf("OPTIMIZATION: INACTIVE\n");
+		send_default_params();
+	}
 		
 	for(;;) {
 		wb_robot_step(TIME_STEP);
 		
-		if (t % 5 == 0) {
+		if (t % 100 == 0) {
 			for (i=0;i<FLOCK_SIZE;i++) {
 				// Get data
 				loc[i][0] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[0]; // X
@@ -306,31 +342,31 @@ int main(int argc, char *args[]) {
 			//printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: performance %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
 			
 			//Mathilde
-			if(OPTIMIZE){ 
-				nb_repetition += 1; 
-				fp = fopen("Reynolds_performance 2.csv" ,"a");
-				fprintf(fp, "%d,%d,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance);
-	            fclose(fp);		
-	        }	
-		}
+			if(OPTIMIZE && (t != 0)){
+                nb_repetition += 1; 
+                fp = fopen("Reynolds_performance.csv" ,"a");
+                fprintf(fp, "%d,%d,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance);
+                fclose(fp);
+                printf("%d,%d,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance);
+                                  }	
+			}
 
-		if(t==40000 && !OPTIMIZE){
-            printf("Exit condition\n");
-	        if(data_line[0][0] <= data_glob[0][0]-1){
-        	    data_line[0][0] += 1;
-    	    	printf("next line number is %f\n", data_line[0][0]);
-            	int action = 2; 
-            	handle_line_csv(line_to_read, action, data_line[0][0], data_line);
-            	wb_supervisor_world_reload();
-        	}
-       		else{
-        		//wb_supervisor_simulation_quit();
-            	printf("In pause mode\n");
-            	wb_supervisor_simulation_set_mode(WB_SUPERVISOR_SIMULATION_MODE_PAUSE);
-        		}
+			if(t==40000 && OPTIMIZE){
+                printf("Exit condition\n");
+                          
+                if(data_line[0][0] <= data_glob[0][0]-1){
+             		data_line[0][0] += 1;
+                    printf("next line number is %f\n", data_line[0][0]);
+                    handle_line_csv(line_to_read, REWRITE, data_line[0][0], data_line);
+                    wb_supervisor_world_reload();
+                }
+                else{
+          	    	//wb_supervisor_simulation_quit();
+                    printf("In pause mode\n");
+                	wb_supervisor_simulation_set_mode(WB_SUPERVISOR_SIMULATION_MODE_PAUSE);
+                }
+            }
+                      
+            t += TIME_STEP;
         }
-                      
-        t += TIME_STEP;
-                      
-	}
 }
