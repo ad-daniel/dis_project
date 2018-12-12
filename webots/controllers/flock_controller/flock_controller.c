@@ -47,7 +47,7 @@ float RULE2_THRESHOLD = 0.12;  	// Threshold to activate dispersion rule. defaul
 //float RULE2_WEIGHT	= 5.1; // Weight of dispersion rule. default 0.02/10
 
 //float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
-float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float weightY;
+float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float REYN_MIGR_RATIO;
 
 #define MIGRATORY_URGE 1    		   // Tells the robots if they should just go forward or move towards a specific migratory direction
 #define REYNOLDS 1
@@ -60,10 +60,11 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 #define VERBOSE_3  	 0
 #define VERBOSE_4  	 0
 #define VERBOSE_5           0
+#define VERBOSE_M      1
 #define ROBOT_DEBUG  4 // which robot's information to filter out
 /*Added by Pauline for weights*/
 #define INTIALISATION_STEPS  3000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
-#define REYN_MIGR_RATIO  	0.5 // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
+//#define REYN_MIGR_RATIO  	0.4 // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
 #define BRAITENBERG_LOWER_THRESH 150 // below this value, no avoidance
 #define BRAITENBERG_UPPER_THRESH 2000
 #define BRAITENBERG_SPEED_BIAS 300
@@ -119,6 +120,7 @@ static void reset()
     char *inbuffer; //Mathilde
 
     wb_robot_init();
+    //printf("wb_robot_init done\n");
 
     compass = wb_robot_get_device("compass");
     wb_compass_enable(compass, 64);
@@ -147,28 +149,29 @@ static void reset()
     wb_receiver_enable(receiver2, 64);
     //Reading the robot's name. Pay attention to name specification when adding robots to the simulation!
     sscanf(robot_name,"epuck%d",&robot_id_u); // read robot id from the robot's name
+    //printf("robot name [%s]\n", robot_name);
     robot_id = robot_id_u % FLOCK_SIZE;       // normalize between 0 and FLOCK_SIZE-1
     robot_group = (robot_id_u / FLOCK_SIZE);  // group ID needed for scenario 2
+    //printf("%d#%d\n", robot_group, robot_id);
 
     wb_receiver_enable(receiver3, 64); //Mathilde
-
-	float weightX; float weightY; 
 
 	while(wb_receiver_get_queue_length(receiver3) == 0){wb_robot_step(TIME_STEP);}
 
 	while(wb_receiver_get_queue_length(receiver3) > 0){ 
 	 inbuffer = (char*) wb_receiver_get_data(receiver3);
-	 sscanf(inbuffer,"%f#%f##%f#%f#%f#%f#%f\n", &migr[0], &migr[1], &RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&weightX,&weightY);
+	 sscanf(inbuffer,"%f#%f##%f#%f#%f#%f\n", &migr[0], &migr[1], &RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&REYN_MIGR_RATIO);
 	 
-	 if(VERBOSE_M && robot_id == ROBOT_DEBUG){ printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY, migr[0], migr[1]); }
+	 if(VERBOSE_M && robot_id == ROBOT_DEBUG){ printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,REYN_MIGR_RATIO, migr[0], migr[1]); }
 	 //printf("initializing\n");
 	 wb_receiver_next_packet(receiver3);
 	}
-	//printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY, migr[0], migr[1]);
+	//printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,REYN_MIGR_RATIO, migr[0], migr[1]);
 
 
     
     if(VERBOSE_4 && robot_id == ROBOT_DEBUG){printf("Reset robot %d :: [id: %d][group: %d]\n",robot_id_u, robot_id, robot_group);}
+    //printf("Reset done\n");
 }
 
 
@@ -182,37 +185,6 @@ void limit(int *number, int limit) {
    	 *number = -limit;
 }
 
-/*
- * Updates robot position with wheel speeds
- */
-/*
-void update_self_motion(int msl, int msr) {
-    float theta = my_position[2];
- 
-    // Compute deltas of the robot
-    float dr = (float)msr * SPEED_UNIT_RADS * WHEEL_RADIUS * DELTA_T;
-    float dl = (float)msl * SPEED_UNIT_RADS * WHEEL_RADIUS * DELTA_T;
-    float du = (dr + dl)/2.0;
-    float dtheta = (dr - dl)/AXLE_LENGTH;
- 
-    // Compute deltas in the environment
-    float dx = -du * sinf(theta);
-    float dz = -du * cosf(theta);
- 
-    // Update position
-    my_position[0] += dx;
-    my_position[1] += dz;
-    my_position[2] += dtheta;
- 
-    // Keep orientation within 0, 2pi
-    if (my_position[2] > 2*M_PI){
-   	 my_position[2] -= 2.0*M_PI;
-    }
-    if (my_position[2] < 0){
-   	 my_position[2] += 2.0*M_PI;
-    }
-}
-*/
 void update_self_motion(int msl, int msr) {
 
     float theta = my_position[2];
@@ -238,33 +210,7 @@ void update_self_motion(int msl, int msr) {
 	my_position[2] = (my_position[2]>2*M_PI? my_position[2]-2*M_PI:my_position[2]);
 }
 
-/*
- * Computes wheel speed given a certain X,Z speed
- */
-/*
-void compute_wheel_speeds(int *msl, int *msr)
-{
-    float x = speed[robot_id][0]*cosf(my_position[2]) + speed[robot_id][1]*sinf(my_position[2]); // x in robot coordinates
-    float z = -speed[robot_id][0]*sinf(my_position[2]) + speed[robot_id][1]*cosf(my_position[2]); // z in robot coordinates
 
-    float Ku = 0.2;   // Forward control coefficient
-    float Kw = 1;  // Rotational control coefficient
-    float range = sqrtf(x*x + z*z);      // Distance to the wanted position
-    float bearing = -atan2(x, z);      // Orientation of the wanted position
-    
-    // Compute forward control
-    float u = Ku*range*cosf(bearing);
-    // Compute rotational control
-    float w = Kw*bearing;
-    
-    // Convert to wheel speeds!
-    *msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-    *msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-
-    limit(msl,MAX_SPEED);
-    limit(msr,MAX_SPEED);
-}
-*/
 
 void normalize_speed(int *msl, int *msr) {
     if(ABS(*msl) > MAX_SPEED || ABS(*msr) > MAX_SPEED){
@@ -277,8 +223,7 @@ void normalize_speed(int *msl, int *msr) {
 void compute_wheel_speeds(int *msl, int *msr)
 {
     // Compute wanted position from Reynold's speed and current location
-    //float x = speed[robot_id][0]*cosf(-my_position[2]) - speed[robot_id][1]*sinf(-my_position[2]); // x in robot coordinates
-    //float z = speed[robot_id][0]*sinf(-my_position[2]) + speed[robot_id][1]*cosf(-my_position[2]); // z in robot coordinates
+   
     	float x = speed[robot_id][0];
     	float z = speed[robot_id][1];
    	 
@@ -407,13 +352,6 @@ void reynolds_rules() {
    	 consistency[j] = rel_avg_speed[j];
    	if(VERBOSE && ROBOT_DEBUG == robot_id){ printf("R3 consistency [%f][%f]\n", consistency[0], consistency[1]); }
     }
-    /*
-    if(VERBOSE_2 && robot_id == 0) { 
-          printf("Consistency of robot 0 is [%f][%f]\n", consistency[0], consistency[1]); 
-    }
-    if(VERBOSE_2 && robot_id == 1) { 
-          printf("Consistency of robot 1 is [%f][%f]\n", consistency[0], consistency[1]); 
-    }*/
 
     //aggregation of all behaviors with relative influence determined by weights
     for (j=0;j<2;j++){
@@ -471,7 +409,7 @@ void sim_receive_message(void)
    	 //if(robot_id == 0 && VERBOSE_2){printf("[id]: %d [x]: %f [y]: %f [theta]: %f\n",other_robot_id,range*cos(theta),range*sin(theta),theta/M_PI*180);}
    		 
    	            // Previous in local 
-      global2rel(prev_global_pos[other_robot_id], prev_relative_pos[robot_id]);
+      global2rel(prev_global_pos[other_robot_id], prev_relative_pos[other_robot_id]);
    		   		 
       // Set current relative location
    	  relative_pos[other_robot_id][0] = range*cos(theta);  // relative x pos
@@ -482,10 +420,7 @@ void sim_receive_message(void)
    	  relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
       relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
    		 
-      // Set relative_pos in global coordinates of this time step (x and y only)
-   	  /* prev_global_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
-   	  prev_global_pos[other_robot_id][1] = relative_pos[other_robot_id][1];*/
-   		 
+      // Set relative_pos in global coordinates of this time step (x and y only)   		 
    	  rel2global(relative_pos[other_robot_id],  prev_global_pos[other_robot_id]);
    		
    		
@@ -572,20 +507,12 @@ int main(){
     int bmsl, bmsr, sum_sensors;    // Braitenberg parameters
     int distances[NB_SENSORS];   	 // Array for the distance sensor readings
     int max_sens;   				 // Store highest sensor value
-    //float wb, wm, wr;              	 
-    reset();   					 // Resetting the robot
+    //float wb, wm, wr;          	 
+    reset();   	
+    //printf("Reset done\n");				 // Resetting the robot
 
     msl = 0; msr = 0;
-    
-    /* Added by Pauline
-    //First, e-puck form a Flock: implement when main is already done
-    
-    for(int i=0; i<INTIALISATION_STEPS; i++) {
-          	//do as in loop of main with only reynolds and migration
-          	//just set  max_sens = 0 in set_final_speed 	//don't care about obstacles, try to get a flock aligned with migration
-    }
-    */
-    
+      
     int count=0;
     // Forever
     for(;;){
@@ -616,18 +543,6 @@ int main(){
    			 bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
   		 }
   		 normalize_speed(&bmsr, &bmsl);
-  		 //Il faudrait prendre la différence des 2 et normaliser 
-                      
-   		 // Adapt Braitenberg values (empirical tests)
-   		 //bmsl/=MIN_SENS; bmsr/=MIN_SENS;
-   		 //bmsl+=66; bmsr+=72;
-
-   		 // add speed bias to ensure we are moving rather fast during avoidance
-   		 //bmsl+=400; bmsr +=400;
-
-   		 //bmsl = bmsl + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsl + BRAITENBERG_SPEED_BIAS : bmsl;
-   		 //bmsr = bmsr + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsr + BRAITENBERG_SPEED_BIAS : bmsr;
-
     	}    
 
    	 // Send and get information
@@ -639,8 +554,6 @@ int main(){
    			 
    	 sim_receive_message();
 
-   	 //speed[robot_id][0] = (1/DELTA_T)*(my_position[0]-prev_my_position[0]);
-   	 //speed[robot_id][1] = (1/DELTA_T)*(my_position[1]-prev_my_position[1]);
     
    	 if(REYNOLDS){
    		 // Reynold's rules with all previous info (updates the speed[][] table)

@@ -14,8 +14,8 @@ nb_simul = 0;
 
 while Reynolds_perf < 0
     disp(errmsg); 
-    [Reynolds_perf, errmsg] = fopen('Reynolds_performance_05.12.csv', 'r'); 
-    performances = csvread('Reynolds_performance_05.12.csv');
+    [Reynolds_perf, errmsg] = fopen('Reynolds_performance _ 09.12.csv', 'r'); 
+    performances = csvread('Reynolds_performance _ 09.12.csv');
     [M,N]=size(performances); 
     nb_steps_per_simul = max(performances(:,1)); 
     nb_simul = sum(performances(:,1)==nb_steps_per_simul); 
