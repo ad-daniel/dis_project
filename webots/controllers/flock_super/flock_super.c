@@ -18,8 +18,8 @@
 #include <webots/emitter.h>
 #include <webots/supervisor.h>
 
-#define FLOCK_SIZE	5 		// Number of robots in flock
-#define TIME_STEP	64		// [ms] Length of time step
+#define FLOCK_SIZE  5 		// Number of robots in flock
+#define TIME_STEP   64		// [ms] Length of time step
 #define VMAX        0.1287
 
 #define OPTIMIZE    0
@@ -44,7 +44,11 @@ int t;
 double **data_glob;//Mathilde
 double **data_line;
 // good results ...
+<<<<<<< HEAD
+float default_weight[5] = { 0.6, 0.8, 0.1, 0.01, 0.01 };
+=======
 float default_weight[5] = { 0.1, 0.1, 0, 0.01, 0.01 };
+>>>>>>> cd19967ae848659909e7e0fbec77575e13ec2162
   
 
 /*
@@ -59,7 +63,11 @@ void send_default_params(){
   // Also good results ...
   // float data_glob[5] = { }
 
+<<<<<<< HEAD
+  printf("Sending migr [%.3f][%.3f] and default parameters [%.3f][%.3f][%.3f][%.3f][%.3f] \n", migrx, migrz, default_weight[0], default_weight[1], default_weight[2], default_weight[3], default_weight[4]);
+=======
   printf("Sending default parameters [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n", default_weight[0], default_weight[1], default_weight[2], default_weight[3], default_weight[4], migrx, migrz);
+>>>>>>> cd19967ae848659909e7e0fbec77575e13ec2162
   sprintf(message, "%f#%f##%f#%f#%f#%f#%f\n", migrx, migrz, default_weight[0], default_weight[1], default_weight[2], default_weight[3], default_weight[4]);
 
   wb_emitter_send(emitter, message, strlen(message) + 1);
