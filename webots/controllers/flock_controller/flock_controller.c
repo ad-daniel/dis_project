@@ -63,19 +63,18 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 #define VERBOSE_3  	 0
 #define VERBOSE_4  	 0
 #define VERBOSE_5           0
-#define VERBOSE_P           1
-#define ROBOT_DEBUG  2      // which robot's information to filter out
+#define VERBOSE_P           0
+#define ROBOT_DEBUG  3      // which robot's information to filter out
 /*Added by Pauline for weights*/
-#define INTIALISATION_STEPS  30000  //30 secondes at the beginning to form flock and align with migration (before infinite loop)
-#define REYN_MIGR_RATIO  	2 // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
+#define REYN_MIGR_RATIO  	1 // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
 #define BRAITENBERG_LOWER_THRESH 350 // below this value, no avoidance
 #define BRAITENBERG_UPPER_THRESH 2000
 #define BRAITENBERG_SPEED_BIAS 300
 
 /*Try other*/
-#define THRESHOLD_TIME_FLOCK_FORMATION 100  // threshold: if reynold below then begin with Migration and Braitenberg
+#define THRESHOLD_TIME_FLOCK_FORMATION 1000  // threshold: if reynold below then begin with Migration and Braitenberg
 #define BETA_MIGRATION 1        // how much of migr_diff to implement during each step 
-#define FLOCK_STABLE  20    //rmsl + rmsr < Flock_stable then get out of beginning flock formation
+#define FLOCK_STABLE  10    //rmsl + rmsr < Flock_stable then get out of beginning flock formation
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
 WbDeviceTag right_motor; //handler for the right wheel of the robot
@@ -187,37 +186,7 @@ void limit(int *number, int limit) {
    	 *number = -limit;
 }
 
-/*
- * Updates robot position with wheel speeds
- */
-/*
-void update_self_motion(int msl, int msr) {
-    float theta = my_position[2];
- 
-    // Compute deltas of the robot
-    float dr = (float)msr * SPEED_UNIT_RADS * WHEEL_RADIUS * DELTA_T;
-    float dl = (float)msl * SPEED_UNIT_RADS * WHEEL_RADIUS * DELTA_T;
-    float du = (dr + dl)/2.0;
-    float dtheta = (dr - dl)/AXLE_LENGTH;
- 
-    // Compute deltas in the environment
-    float dx = -du * sinf(theta);
-    float dz = -du * cosf(theta);
- 
-    // Update position
-    my_position[0] += dx;
-    my_position[1] += dz;
-    my_position[2] += dtheta;
- 
-    // Keep orientation within 0, 2pi
-    if (my_position[2] > 2*M_PI){
-   	 my_position[2] -= 2.0*M_PI;
-    }
-    if (my_position[2] < 0){
-   	 my_position[2] += 2.0*M_PI;
-    }
-}
-*/
+
 void update_self_motion(int msl, int msr) {
 
     float theta = my_position[2];
@@ -243,33 +212,7 @@ void update_self_motion(int msl, int msr) {
 	my_position[2] = (my_position[2] > 2*M_PI ? my_position[2]-2*M_PI :my_position[2]);
 }
 
-/*
- * Computes wheel speed given a certain X,Z speed
- */
-/*
-void compute_wheel_speeds(int *msl, int *msr)
-{
-    float x = speed[robot_id][0]*cosf(my_position[2]) + speed[robot_id][1]*sinf(my_position[2]); // x in robot coordinates
-    float z = -speed[robot_id][0]*sinf(my_position[2]) + speed[robot_id][1]*cosf(my_position[2]); // z in robot coordinates
 
-    float Ku = 0.2;   // Forward control coefficient
-    float Kw = 1;  // Rotational control coefficient
-    float range = sqrtf(x*x + z*z);      // Distance to the wanted position
-    float bearing = -atan2(x, z);      // Orientation of the wanted position
-    
-    // Compute forward control
-    float u = Ku*range*cosf(bearing);
-    // Compute rotational control
-    float w = Kw*bearing;
-    
-    // Convert to wheel speeds!
-    *msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-    *msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-
-    limit(msl,MAX_SPEED);
-    limit(msr,MAX_SPEED);
-}
-*/
 
 void normalize_speed(int *msl, int *msr, int max_speed) {
     if(ABS(*msl) > max_speed || ABS(*msr) > max_speed){
@@ -367,7 +310,7 @@ void reynolds_rules() {
    		 n_flockmates++;
    	 }
     }
-    //if(VERBOSE_P && ROBOT_DEBUG == robot_id){ printf("%d flockmates", n_flockmates); }
+    if(VERBOSE_P && ROBOT_DEBUG == robot_id){ printf("%d flockmates\n", n_flockmates); }
     
     if(n_flockmates>0){
    	 for(j=0;j<2;j++){
@@ -478,7 +421,7 @@ void sim_receive_message(void)
    	  range = sqrt((1/message_rssi));
    	 //if(robot_id == 0 && VERBOSE_2){printf("[id]: %d [x]: %f [y]: %f [theta]: %f\n",other_robot_id,range*cos(theta),range*sin(theta),theta/M_PI*180);}
    		 
-   		 
+   /*		 
    		 // Update the prev position
    		 prev_relative_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
    		 prev_relative_pos[other_robot_id][1] = relative_pos[other_robot_id][1];
@@ -497,8 +440,9 @@ void sim_receive_message(void)
    		 
    	 //New by Pauline: put in global at time step (t-1) and take in global of new ref at time step t
    	 //need prov_global_pos as global variable, otherwise we lose relative for other computations (maybe put it local in function afterwards)
-   	            // Previous in local 
- /*     global2rel(prev_global_pos[other_robot_id], prev_relative_pos[other_robot_id]);
+  
+  */ 	            // Previous in local 
+      global2rel(prev_global_pos[other_robot_id], prev_relative_pos[other_robot_id]);
    		
    		   		 
       // Set current relative location
@@ -512,7 +456,7 @@ void sim_receive_message(void)
 
    		 
    	  rel2global(relative_pos[other_robot_id],  prev_global_pos[other_robot_id]);
- */  		
+   		
    		
    		
    	  // if range < 0.25, consider it as part of my flock
@@ -557,33 +501,34 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int j_speed, int ma
      	if(ROBOT_DEBUG == robot_id && VERBOSE_5){printf("[max_sensor] [%d] \n",max_sens);}
 
          if(ROBOT_DEBUG == robot_id && VERBOSE_5){printf("[log(max_sensor)] [%f] \n",log(max_sens));}
-
-     	 
+   
      	 if (log(max_sens) > log(BRAITENBERG_LOWER_THRESH)){
+             if(ROBOT_DEBUG == robot_id && VERBOSE_P){printf("here \n");}
      		 wb = log(max_sens) / log(BRAITENBERG_UPPER_THRESH); // Above upper threshold, do only avoidance;
      		 wb = wb > 1.0 ? 1.0 : wb;
      		 wj = 0;
-     		 
-     		/* if(n_flockmates < FLOCK_SIZE -1)  {
-                        migr_diff += msl - msr;
-                   }  */
-     	 }
-     	 else{
+     	 } else {
+     	          if(ROBOT_DEBUG == robot_id && VERBOSE_P){printf("thhere \n");}
      		 wb = 0.0;
-     		 wj = BETA_MIGRATION;
+     		 if(n_flockmates > 0) {
+     		     wj = BETA_MIGRATION/(float) n_flockmates;  //want less importance if has more flockmates
+     		 }else{ 
+     		     wj = BETA_MIGRATION;
+     		 }
+   
      	 }
      	 
-         if(ROBOT_DEBUG == robot_id && VERBOSE_5){printf("[flag_obstacle] [%d] \n",flag_obstacle);}
+     	 //if(ROBOT_DEBUG == robot_id && VERBOSE_P){printf("[ko]  \n");}
+     	 
    	 wm = (1 - wb) / (float)(1 + REYN_MIGR_RATIO);
    	 wr = REYN_MIGR_RATIO *  wm;
      	 
     }
     if(VERBOSE_P && ROBOT_DEBUG == robot_id && f_computeNot) {     
-   	 printf("-----------------------------------------------\n");
    	 printf("ALONE:  [bmsl]: %d [mmsl]: %d [rmsl] %d [jmsl]: %d\n", b_speed, m_speed, r_speed, j_speed);  
    	 printf("WITH WEIGHTS: [w_b_s]: %f [w_m_s]: %f [w_r_s]: %f [w_j_s]: %f\n", wb * b_speed, wm * m_speed, wr * r_speed, wj * j_speed);
      }
-    if(ROBOT_DEBUG == robot_id && VERBOSE_3){printf("[wb] [%f] :: [wm] [%f] :: [wr] [%f]\n", wb, wm, wr);}
+    if(ROBOT_DEBUG == robot_id && VERBOSE_P){printf("[wb] [%f] :: [wm] [%f] :: [wr] [%f] :: [wj] [%f]\n", wb, wm, wr, wj);}
 
     final_speed = wb * b_speed + wm * m_speed + wr * r_speed + wj * j_speed;
     f_computeNot = ~f_computeNot;
@@ -641,18 +586,6 @@ int main(){
    			 bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
   		 }
   		 normalize_speed(&bmsr, &bmsl, MAX_SPEED);
-  		 //Il faudrait prendre la différence des 2 et normaliser 
-                      
-   		 // Adapt Braitenberg values (empirical tests)
-   		 //bmsl/=MIN_SENS; bmsr/=MIN_SENS;
-   		 //bmsl+=66; bmsr+=72;
-
-   		 // add speed bias to ensure we are moving rather fast during avoidance
-   		 //bmsl+=400; bmsr +=400;
-
-   		 //bmsl = bmsl + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsl + BRAITENBERG_SPEED_BIAS : bmsl;
-   		 //bmsr = bmsr + BRAITENBERG_SPEED_BIAS < MAX_SPEED ? bmsr + BRAITENBERG_SPEED_BIAS : bmsr;
-
     	}    
 
    	 // Send and get information
@@ -664,8 +597,6 @@ int main(){
    			 
    	 sim_receive_message();
 
-   	 //speed[robot_id][0] = (1/DELTA_T)*(my_position[0]-prev_my_position[0]);
-   	 //speed[robot_id][1] = (1/DELTA_T)*(my_position[1]-prev_my_position[1]);
     
    	 if(REYNOLDS){
    		 // Reynold's rules with all previous info (updates the speed[][] table)
@@ -699,22 +630,23 @@ int main(){
             jmsl =  -migr_diff/2;
             jmsr =   migr_diff/2;   	
             if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("Migr_diff = %f\n", migr_diff);} 
-            if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("JMSL = %d\n", jmsl);} 
-            if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("JMSR = %d\n", jmsr);} 
+            if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("JMSL = %d, JMSL = %d\n", jmsl, jmsr);} 
    	   normalize_speed(&jmsr, &jmsl, JOIN_SPEED);
    	 }   	 
    	 
-    	/* Added by Pauline*/
    	 // Set final speed
-   	 if( count < 3 || (count < THRESHOLD_TIME_FLOCK_FORMATION && (ABS(rmsl) + ABS(rmsr) < FLOCK_STABLE))  ) {
-     	    //if(VERBOSE && ROBOT_DEBUG == robot_id) {printf("ONLY REYNOLDS");}
+   	 if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("count = %d\n", count);} 
+   	 if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("reynold = %d\n", ABS(rmsl) + ABS(rmsr));}  
+   	 
+   	 if( count < 3 || (count < THRESHOLD_TIME_FLOCK_FORMATION && (ABS(rmsl) + ABS(rmsr) > FLOCK_STABLE))  ) {
+     	        if(VERBOSE_P && ROBOT_DEBUG == robot_id) { printf("ONLY REYNOLDS\n"); }
                  msl = rmsl;
                  msr = rmsr;
    	 } else {
-             //if(VERBOSE && ROBOT_DEBUG == robot_id) {printf("ALL IS ON");}
-              if(VERBOSE_P && ROBOT_DEBUG == robot_id) { printf("Left"); }
+              if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("ALL IS ON\n");}
+              if(VERBOSE_P && ROBOT_DEBUG == robot_id) { printf("Left\n"); }
               msl = set_final_speed(bmsl,  rmsl,  mmsl, jmsl, max_sens);
-              if(VERBOSE_P && ROBOT_DEBUG == robot_id) { printf("Right"); }
+              if(VERBOSE_P && ROBOT_DEBUG == robot_id) { printf("Right\n"); }
               msr = set_final_speed(bmsr,  rmsr,  mmsr, jmsr, max_sens);
    	 }
 
@@ -735,8 +667,8 @@ int main(){
           }  
         
           if(n_flockmates == FLOCK_SIZE - 1)  {
-             migr_diff = 0;
-             if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("FLOCK FULL"); }
+             //migr_diff = 0;
+             if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("FLOCK FULL\n"); }
           }
           
           if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("Diff [%f]\n", migr_diff); }
@@ -751,7 +683,8 @@ int main(){
 
    	 update_self_motion(msl,msr);
 
-    
+          //if(ROBOT_DEBUG == robot_id) { printf("-----------------------------END OF STEP ---------------------------\n");}
+   	 
    	 // Continue one step
    	 wb_robot_step(TIME_STEP);
    	 

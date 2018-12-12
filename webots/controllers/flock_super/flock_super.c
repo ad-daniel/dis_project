@@ -18,8 +18,8 @@
 #include <webots/emitter.h>
 #include <webots/supervisor.h>
 
-#define FLOCK_SIZE	5 		// Number of robots in flock
-#define TIME_STEP	64		// [ms] Length of time step
+#define FLOCK_SIZE  5 		// Number of robots in flock
+#define TIME_STEP   64		// [ms] Length of time step
 #define VMAX        0.1287
 
 #define OPTIMIZE    0
@@ -44,7 +44,7 @@ int t;
 double **data_glob;//Mathilde
 double **data_line;
 // good results ...
-float default_weight[5] = { 0.5, 0.95, 0.1, 0.01, 0.01 };
+float default_weight[5] = { 0.6, 0.8, 0.1, 0.01, 0.01 };
   
 
 /*
