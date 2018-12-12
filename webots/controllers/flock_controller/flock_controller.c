@@ -70,7 +70,9 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 
 /*Try other*/
 #define THRESHOLD_BEGIN 200  // threshold: if reynold below then begin with Migration and Braitenberg
+
 #define BETA_MIGRATION 1        // how much of migr_diff to implement during each step 
+
 
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
@@ -107,7 +109,9 @@ char* robot_name;
 // tracks which are my flockmates. Myself excluded.
 // 1 : is my flockmate and 0 : isn't my flockmate
 bool flockmates[FLOCK_SIZE] = {0};
+
 float migr_diff = 0;
+
 
 /*
  * Reset the robot's devices and get its ID
@@ -489,7 +493,7 @@ void sim_receive_message(void)
    	 //New by Pauline: put in global at time step (t-1) and take in global of new ref at time step t
    	 //need prov_global_pos as global variable, otherwise we lose relative for other computations (maybe put it local in function afterwards)
    	            // Previous in local 
-      global2rel(prev_global_pos[other_robot_id], prev_relative_pos[robot_id]);
+      global2rel(prev_global_pos[other_robot_id], prev_relative_pos[other_robot_id]);
    		 
    		/* prev_relative_pos[other_robot_id][0] = prev_global_pos[other_robot_id][0];  
    		 prev_relative_pos[other_robot_id][1] = prev_global_pos[other_robot_id][1]; 
@@ -678,6 +682,7 @@ int main(){
    		 float angle = atan2(speed[robot_id][1],speed[robot_id][0]); 
      		 if(VERBOSE){printf("angle = %f\n",angle*180/(M_PI));}
    		 }
+
    		if(!flag_obstacle){
    		 mmsl -= BETA_MIGRATION * migr_diff;
 		 mmsr += BETA_MIGRATION * migr_diff;}
@@ -687,6 +692,7 @@ int main(){
 		 }*/
 		if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("My position [%f][%f]\n",my_position[0], my_position[1]); }
                   if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("Migration difference[%d][%d]\n", mmsl, mmsr); }
+
    		 compute_wheel_speeds(&mmsl, &mmsr);
    		if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("Migration [%d][%d]\n", mmsl, mmsr); }
 
@@ -694,15 +700,20 @@ int main(){
    	 
     	/* Added by Pauline*/
    	 // Set final speed
-   	 if(count < 100) {
-   	 //printf("ONLY REYNOLDS");
-               msl = rmsl;
-               msr = rmsr;
-   	 } else {
-             //printf("ALL IS ON");
-              msl = set_final_speed(bmsl,  rmsl,  mmsl,  max_sens);
-              msr = set_final_speed(bmsr,  rmsr,  mmsr, max_sens);
-   	 }
+
+   	 while(count < 100) {
+		printf("ONLY REYNOLDS");
+		if(rmsl + rmsr < THRESHOLD_BEGIN) {
+			break;
+		}
+ 		msl = rmsl;
+   		msr = rmsr;
+   	 } 
+	 
+   	 printf("ALL IS ON");
+         msl = set_final_speed(bmsl,  rmsl,  mmsl,  max_sens);
+   	 msr = set_final_speed(bmsr,  rmsr,  mmsr, max_sens);
+
    	 /*
    	 if(robot_id == 0) {
    	       msr = 0; msl = 0;
@@ -716,9 +727,11 @@ int main(){
    	 printf("<<<<<<<<<<<>>>>>>>>>>>>>>\n");
        		 printf("[msl]: %d [msr] %d\n",msl,msr);
             }
+
    	 //printf("-----------------------------------------------\n");
           migr_diff += msl -msr;
           if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("Diff [%f]\n", migr_diff); }
+
    	 // Set speed
    	 msl_w = msl*MAX_SPEED_WEB/1000;
    	 msr_w = msr*MAX_SPEED_WEB/1000;
