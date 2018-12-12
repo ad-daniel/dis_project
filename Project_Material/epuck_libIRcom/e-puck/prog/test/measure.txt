@@ -1,0 +1,214 @@
+Receive successful : 170  - distance=12.311828 	 direction=0.296706 
+Receive successful : 171  - distance=12.229599 	 direction=5.986479 
+Receive successful : 172  - distance=11.684582 	 direction=0.296706 
+Receive successful : 173  - distance=12.361165 	 direction=0.296706 
+Receive successful : 174  - distance=12.344719 	 direction=0.296706 
+Receive failed 
+Receive successful : 176  - distance=12.344719 	 direction=0.296706 
+Receive successful : 177  - distance=11.709940 	 direction=0.296706 
+Receive failed 
+Receive successful : 179  - distance=12.361165 	 direction=0.296706 
+Receive successful : 180  - distance=12.246045 	 direction=0.296706 
+==== RECEIVER ====
+
+Receive successful : 8  - distance=15.565299 	 direction=0.296706 
+Receive successful : 9  - distance=15.835133 	 direction=0.296706 
+Receive successful : 10  - distance=16.405909 	 direction=0.296706 
+Receive successful : 11  - distance=17.350723 	 direction=0.296706 
+Receive successful : 12  - distance=16.405909 	 direction=0.296706 
+Receive successful : 14  - distance=16.041210 	 direction=0.296706 
+Receive successful : 15  - distance=17.199940 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive successful : 18  - distance=16.223558 	 direction=0.296706 
+Receive successful : 19  - distance=17.350723 	 direction=0.296706 
+Receive successful : 20  - distance=16.132385 	 direction=0.296706 
+Receive successful : 21  - distance=16.782461 	 direction=0.296706 
+Receive failed 
+Receive successful : 23  - distance=16.641933 	 direction=0.296706 
+Receive successful : 24  - distance=17.350723 	 direction=0.296706 
+Receive successful : 25  - distance=16.501406 	 direction=0.296706 
+Receive successful : 26  - distance=16.501406 	 direction=0.296706 
+Receive successful : 27  - distance=17.199940 	 direction=0.296706 
+Receive successful : 28  - distance=16.132385 	 direction=0.296706 
+Receive failed 
+Receive successful : 30  - distance=17.350723 	 direction=0.296706 
+Receive failed 
+Receive successful : 34  - distance=16.314734 	 direction=0.296706 
+Receive successful : 140  - distance=21.641752 	 direction=0.296706 
+Receive failed 
+Receive successful : 144  - distance=21.641752 	 direction=0.296706 
+Receive successful : 145  - distance=21.641752 	 direction=0.296706 
+Receive failed 
+Receive successful : 147  - distance=21.641752 	 direction=0.296706 
+Receive successful : 150  - distance=21.641752 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive successful : 154  - distance=21.963917 	 direction=0.296706 
+Receive failed 
+Receive successful : 157  - distance=21.963917 	 direction=0.296706 
+Receive failed 
+Receive successful : 161  - distance=21.641752 	 direction=0.296706 
+Receive successful : 162  - distance=21.641752 	 direction=0.296706 
+Receive successful : 166  - distance=22.438597 	 direction=0.296706 
+Receive successful : 167  - distance=22.438597 	 direction=0.296706 
+Receive successful : 168  - distance=22.328947 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive failed 
+Receive failed 
+Receive successful : 186  - distance=22.109650 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive failed 
+Receive failed 
+Receive successful : 239  - distance=22.109650 	 direction=0.296706 
+Receive successful : 27  - distance=8.561326 	 direction=0.296706 
+Receive successful : 28  - distance=8.576316 	 direction=0.296706 
+Receive successful : 29  - distance=8.562479 	 direction=0.296706 
+Receive successful : 30  - distance=8.639737 	 direction=0.296706 
+Receive successful : 31  - distance=8.567091 	 direction=0.296706 
+Receive successful : 32  - distance=8.561326 	 direction=0.296706 
+Receive successful : 33  - distance=8.600532 	 direction=0.296706 
+Receive failed 
+Receive successful : 35  - distance=8.571704 	 direction=0.296706 
+Receive failed 
+Receive successful : 37  - distance=8.556713 	 direction=0.296706 
+Receive successful : 38  - distance=8.553254 	 direction=0.296706 
+Receive failed 
+Receive successful : 125  - distance=14.336702 	 direction=0.296706 
+Receive successful : 126  - distance=14.234610 	 direction=0.296706 
+Receive failed 
+Receive successful : 130  - distance=14.183563 	 direction=0.296706 
+Receive successful : 131  - distance=13.734365 	 direction=0.296706 
+Receive successful : 133  - distance=15.326233 	 direction=0.296706 
+Receive successful : 135  - distance=13.693964 	 direction=0.296706 
+Receive successful : 200  - distance=20.200634 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive successful : 203  - distance=18.818575 	 direction=0.296706 
+Receive successful : 208  - distance=19.363441 	 direction=0.296706 
+Receive successful : 209  - distance=20.200634 	 direction=0.296706 
+Receive successful : 210  - distance=19.746660 	 direction=0.296706 
+Receive successful : 212  - distance=20.870401 	 direction=0.296706 
+Receive successful : 213  - distance=19.746660 	 direction=0.296706 
+Receive successful : 215  - distance=18.018776 	 direction=0.296706 
+Receive successful : 217  - distance=19.363441 	 direction=0.296706 
+Receive successful : 218  - distance=18.818575 	 direction=0.296706 
+Receive successful : 219  - distance=17.500135 	 direction=0.296706 
+Receive successful : 167  - distance=21.641752 	 direction=0.296706 
+Receive failed 
+Receive successful : 77  - distance=22.219297 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive successful : 87  - distance=22.219297 	 direction=0.296706 
+Receive failed 
+Receive successful : 93  - distance=22.219297 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive successful : 124  - distance=22.000000 	 direction=0.296706 
+Receive successful : 127  - distance=22.219297 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive successful : 239  - distance=22.219297 	 direction=0.296706 
+Receive successful : 247  - distance=22.219297 	 direction=0.296706 
+Receive successful : 219  - distance=9.613684 	 direction=0.296706 
+Receive successful : 221  - distance=9.594856 	 direction=0.296706 
+Receive successful : 222  - distance=9.568500 	 direction=0.296706 
+Receive successful : 223  - distance=9.643806 	 direction=0.296706 
+Receive successful : 224  - distance=10.402104 	 direction=0.296706 
+Receive failed 
+Receive successful : 113  - distance=10.423373 	 direction=0.296706 
+Receive successful : 227  - distance=10.473002 	 direction=0.296706 
+Receive successful : 228  - distance=10.451733 	 direction=0.296706 
+Receive successful : 229  - distance=9.553438 	 direction=0.296706 
+Receive successful : 230  - distance=10.451733 	 direction=0.296706 
+Receive successful : 231  - distance=9.602387 	 direction=0.296706 
+Receive successful : 232  - distance=10.380835 	 direction=0.296706 
+Receive successful : 234  - distance=10.416284 	 direction=0.296706 
+Receive successful : 235  - distance=9.624979 	 direction=0.296706 
+Receive successful : 237  - distance=9.591091 	 direction=0.296706 
+Receive successful : 238  - distance=9.598621 	 direction=0.296706 
+Receive successful : 239  - distance=9.813247 	 direction=0.296706 
+Receive successful : 62  - distance=15.632757 	 direction=0.296706 
+Receive successful : 63  - distance=15.121398 	 direction=0.296706 
+Receive failed 
+Receive successful : 66  - distance=15.121398 	 direction=0.296706 
+Receive successful : 67  - distance=15.902591 	 direction=0.296706 
+Receive successful : 68  - distance=15.189676 	 direction=0.296706 
+Receive successful : 69  - distance=15.565299 	 direction=0.296706 
+Receive failed 
+Receive successful : 72  - distance=15.189676 	 direction=0.296706 
+Receive successful : 75  - distance=15.565299 	 direction=0.296706 
+Receive successful : 76  - distance=15.462789 	 direction=0.296706 
+Receive successful : 78  - distance=15.902591 	 direction=0.296706 
+Receive successful : 79  - distance=15.902591 	 direction=0.296706 
+Receive successful : 82  - distance=15.428650 	 direction=0.296706 
+Receive successful : 83  - distance=15.632757 	 direction=0.296706 
+Receive successful : 84  - distance=15.496927 	 direction=0.296706 
+Receive failed 
+Receive successful : 136  - distance=19.363441 	 direction=0.296706 
+Receive failed 
+Receive successful : 28  - distance=17.500135 	 direction=0.296706 
+Receive failed 
+Receive successful : 142  - distance=20.870401 	 direction=0.296706 
+Receive successful : 143  - distance=19.005018 	 direction=0.296706 
+Receive successful : 144  - distance=19.746660 	 direction=0.296706 
+Receive successful : 145  - distance=20.488485 	 direction=0.296706 
+Receive successful : 146  - distance=21.434443 	 direction=0.296706 
+Receive successful : 147  - distance=21.434443 	 direction=0.296706 
+Receive successful : 148  - distance=19.363441 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive successful : 242  - distance=22.109650 	 direction=0.296706 
+Receive failed 
+Receive failed 
+Receive successful : 246  - distance=22.328947 	 direction=0.296706 ÿReceive successful : 166  - distance=12.476285 	 direction=0.296706 
+Receive successful : 167  - distance=11.646545 	 direction=0.872665 
+Receive successful : 168  - distance=11.570471 	 direction=0.296706 
+Receive failed 
+Receive successful : 170  - distance=12.443394 	 direction=0.872665 
+Receive successful : 171  - distance=12.492731 	 direction=0.296706 
+Receive failed 
+Receive successful : 173  - distance=12.492731 	 direction=0.296706 
+Receive successful : 177  - distance=11.557792 	 direction=0.296706 
+Receive successful : 178  - distance=11.798694 	 direction=0.296706 
+Receive successful : 180  - distance=11.532434 	 direction=0.296706 
+Receive successful : 181  - distance=12.492731 	 direction=0.296706 
+Receive successful : 182  - distance=12.476285 	 direction=0.296706 
+Receive failed 
+Receive successful : 184  - distance=11.507075 	 direction=0.296706 
+Receive successful : 186  - distance=12.492731 	 direction=0.872665 
+Receive successful : 187  - distance=11.773335 	 direction=0.296706 
+Receive successful : 189  - distance=11.760656 	 direction=0.296706 
+Receive successful : 190  - distance=11.811373 	 direction=0.296706 
+Receive successful : 191  - distance=11.044524 	 direction=0.296706 
+Receive successful : 192  - distance=11.709940 	 direction=0.296706 
+Receive successful : 193  - distance=11.557792 	 direction=0.296706 
+Receive successful : 199  - distance=17.908298 	 direction=0.296706 
+Receive successful : 200  - distance=17.049156 	 direction=0.296706 
+Receive successful : 201  - distance=17.772245 	 direction=0.296706 
+Receive failed 
+Receive successful : 203  - distance=17.350723 	 direction=0.296706 
+Receive successful : 204  - distance=17.199940 	 direction=0.296706 
+Receive failed 
+Receive successful : 180  - distance=17.772245 	 direction=0.296706 
+Receive successful : 40  - distance=21.434443 	 direction=0.296706 
+Receive successful : 41  - distance=21.434443 	 direction=0.296706 
+Receive successful : 42  - distance=19.005018 	 direction=0.296706 
+Receive failed 
+Receive successful : 44  - distance=20.488485 	 direction=0.296706 
+Receive successful : 45  - distance=22.328947 	 direction=0.296706 
+Receive successful : 47  - distance=21.963917 	 direction=0.296706 
+Receive failed 
+Receive successful : 49  - distance=22.328947 	 direction=0.296706 
+Receive successful : 50  - distance=21.963917 	 direction=0.296706 
+Receive successful : 51  - distance=21.641752 	 direction=0.296706 
+Receive failed 
+Receive successful : 217  - distance=22.000000 	 direction=0.296706 
+Receive failed 
+Receive successful : 184  - distance=12.377611 	 direction=1.570796 
+Receive successful : 189  - distance=11.659224 	 direction=1.570796 
+Receive successful : 190  - distance=11.608508 	 direction=1.570796 
+Receive successful : 191  - distance=12.459840 	 direction=1.570796 
+Receive failed 
