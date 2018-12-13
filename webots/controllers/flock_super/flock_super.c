@@ -47,8 +47,8 @@ int t;
 double **data_glob;//Mathilde
 double **data_line;
 // good results ...
-float default_weight[3] = { 1.5, 0.7, 0.75};
-float default_RATIO = 0.4;
+float default_weight[3] = { 10., 3.1, 0.5};
+float default_RATIO = 1.;
   
 
 /*

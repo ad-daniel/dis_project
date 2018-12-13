@@ -64,14 +64,15 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float REYN_MIGR_RATI
 #define VERBOSE_3  	 0
 #define VERBOSE_4  	 0
 #define VERBOSE_5           0
-#define VERBOSE_P           1
+#define VERBOSE_P           0
+#define VERBOSE_M      0
 #define ROBOT_DEBUG  3      // which robot's information to filter out
 
 #define ROBOT_DEBUG_A 0
 #define ROBOT_DEBUG_B 1
 
 /*Added by Pauline for weights*/
-static float REYN_MIGR_RATIO =   	5.; // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
+float REYN_MIGR_RATIO =   	5.; // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
 #define BRAITENBERG_LOWER_THRESH 350 // below this value, no avoidance
 #define BRAITENBERG_UPPER_THRESH 2000
 #define BRAITENBERG_SPEED_BIAS 300
