@@ -10,6 +10,7 @@
 
 PROG = epuck1
 EPUCKLIBROOT = ../../src
+OURPATH = /home/grall/Desktop/MyFiles/DIS/dis_project/Project_Material/epuck_libIRcom/e-puck/prog/lib
 
 # ==============================================================================
 # Potential Epuck Libraries
@@ -50,7 +51,9 @@ DEPCFLAGS = -Wall -I. -I$(EPUCKLIBROOT)/std_microchip/support/h -I$(EPUCKLIBROOT
 CFLAGS   = $(DEPCFLAGS) -mcpu=30F6014A
 
 LDFLAGS  = -L$(EPUCKLIBROOT)/std_microchip/lib --defsym=__ICD2RAM=1 --script=$(EPUCKLIBROOT)/std_microchip/support/gld/p30f6014a.gld -mpic30_elf32
-LDLIBS   = -lpic30-elf -lm-elf -lc-elf 
+#LDLIBS   = -lpic30-elf -lm-elf -lc-elf 
+
+LDLIBS   = -lm-elf -lc-elf -L$(OURPATH) -lpic30-elf  
 #LDLIBS   = -lpic30-coff -lm-coff -lc-coff 
 #LDLIBS   = --start-group -lpic30-coff -lm-coff -lc-coff --end-group
 #LDLIBS   = --start-group -lpic30-elf -lm-elf -lc-elf --end-group
