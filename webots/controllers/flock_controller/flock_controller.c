@@ -176,7 +176,7 @@ static void reset()
 	 wb_receiver_next_packet(receiver3);
 	}
 
-    REYN_MIGR_RATIO /= (robot_id+1.)*0.2;
+    REYN_MIGR_RATIO /= (robot_id+1.)*0.2; // Adding heterogenity (pseudo leader)
     printf("Reset robot [id: %d][group: %d] REY_MIGR_RATIO = %f\n",robot_id, robot_group,REYN_MIGR_RATIO);
     if(VERBOSE_4 && robot_id == ROBOT_DEBUG){printf("Reset robot %d :: [id: %d][group: %d]\n",robot_id_u, robot_id, robot_group);}
 }
@@ -702,6 +702,7 @@ int main(){
 
           if(robot_id == ROBOT_DEBUG_A) { printf("-----------------------------END OF STEP A---------------------------\n");}
    	 if(robot_id == ROBOT_DEBUG_B) { printf("-----------------------------END OF STEP B---------------------------\n");}
+          if(robot_id == ROBOT_DEBUG_A) { printf("rmsl [%d] rmsr [%d] \n",rmsr,rsml);}
 
    	 // Continue one step
    	 wb_robot_step(TIME_STEP);
