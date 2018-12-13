@@ -22,11 +22,14 @@
 #define TIME_STEP   64		// [ms] Length of time step
 #define VMAX        0.1287
 
+#define SCENARIO    1 // 0: obstacles and 1: crossing
+
 #define OPTIMIZE    0
 #define READ        0
 #define CREATE      1 
 #define REWRITE     2 
 
+WbNodeRef sups[2];
 WbNodeRef robs[FLOCK_SIZE];		// Robots nodes
 WbFieldRef robs_trans[FLOCK_SIZE];	// Robots translation fields
 WbFieldRef robs_rotation[FLOCK_SIZE];	// Robots rotation fields
@@ -48,7 +51,8 @@ double **data_line;
 double default_weight[5] = { 8.1, 7.5, 3.1, 0.01, 0.01 };
 
   
-
+char* super_name;
+int supervisor_id_u, supervisor_id;
 /*
 * Daniel
 * Send default parameters if no optimization going on
@@ -231,17 +235,23 @@ void reset(void) {
 
 	emitter = wb_robot_get_device("emitter"); //Mathilde
 
-
 	char rob[7] = "epuck0";
 	int i;
 	for (i=0;i<FLOCK_SIZE;i++) {
-		sprintf(rob,"epuck%d",i+offset);
+		sprintf(rob,"epuck%d",i);
 		robs[i] = wb_supervisor_node_get_from_def(rob);
 		robs_trans[i] = wb_supervisor_node_get_field(robs[i],"translation");
 		robs_rotation[i] = wb_supervisor_node_get_field(robs[i],"rotation");
 	}
 
-	printf("Reset supervisor\n");
+
+  if(SCENARIO == 1){
+    super_name = (char*) wb_robot_get_name();
+    sscanf(super_name,"super%d",&supervisor_id_u); // read robot id from the robot's name
+    supervisor_id = supervisor_id_u % 2;       // normalize between 0 and FLOCK_SIZE-1
+  }
+
+	printf("Reset supervisor %d\n", supervisor_id);
 
 }
 
@@ -328,8 +338,13 @@ int main(int argc, char *args[]) {
 	}
 		
 	for(;;) {
-		wb_robot_step(TIME_STEP);
-		
+    wb_robot_step(TIME_STEP);
+
+    // only supervisor 0 computes performance anything
+    if(supervisor_id == 1){ 
+      continue;
+    }   
+
 		if (t % 100 == 0) {
 			for (i=0;i<FLOCK_SIZE;i++) {
 				// Get data
