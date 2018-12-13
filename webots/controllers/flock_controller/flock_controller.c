@@ -515,9 +515,12 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int j_speed, int ma
      	 }
      	 
      	 //if(ROBOT_DEBUG == robot_id && VERBOSE_P){printf("[ko]  \n");}
-     	 
-   	 wm = (1 - wb) / (float)(1 + REYN_MIGR_RATIO);
-   	 wr = REYN_MIGR_RATIO *  wm;
+     	 if(n_flockmates > 0) {
+         	 wm = (1 - wb) / (float)(1 + REYN_MIGR_RATIO);
+         	 wr = REYN_MIGR_RATIO *  wm;
+   	 } else {
+         	 wm = 1 - wb;
+   	 }
      	 
     }
     if(VERBOSE_P && robot_id == ROBOT_DEBUG_A && f_computeNot) { 
