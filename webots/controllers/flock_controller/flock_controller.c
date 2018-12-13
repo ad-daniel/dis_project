@@ -559,7 +559,21 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int j_speed, int ma
 }
 
 
-
+     //Condition pour moins faire reynolds si on avance pas
+int check_if_reynolds(int msl, int msr, int not_moving) {
+ if(ABS(msl) + ABS(msr) < TOO_SLOW && n_flockmates == 0) {
+   not_moving += 1;
+    }
+  if(n_flockmates > 0) {
+   not_moving = 0;
+   no_reynolds = false;   
+     }
+  if(not_moving > STOPPED_THRESHOLD) {
+   not_moving = 0;
+   no_reynolds = true;
+    }
+   return not_moving;
+ }
 // the main function
 int main(){
     int i;   						 // Loop counter
@@ -672,22 +686,7 @@ int main(){
           if(VERBOSE_P && (ROBOT_DEBUG_A == robot_id || ROBOT_DEBUG_B == robot_id )) { printf("RIGHT\n"); }
           msr = set_final_speed(bmsr,  rmsr,  mmsr, jmsr, max_sens);
          
-         
-         //Condition pour moins faire reynolds si on avance pas
-   	 int check_if_reynolds(msl, msr, not_moving) {
-     	    if(ABS(msl) + ABS(msr) < TOO_SLOW && n_flockmates == 0) {
-       	       not_moving += 1;
-   	    }
-   	    if(n_flockmates > 0) {
-       	       not_moving = 0;
-       	       no_reynolds = false;   
-   	     }
-   	    if(not_moving > STOPPED_THRESHOLD) {
-       	       not_moving = 0;
-       	       no_reynolds = true;
-   	    }
-       	    return not_moving;
-   	 }
+        
    	 
    	 not_moving = check_if_reynolds(msl, msr, not_moving);
    	 
@@ -722,7 +721,7 @@ int main(){
 
           if(robot_id == ROBOT_DEBUG_A) { printf("-----------------------------END OF STEP A---------------------------\n");}
    	 if(robot_id == ROBOT_DEBUG_B) { printf("-----------------------------END OF STEP B---------------------------\n");}
-          if(robot_id == ROBOT_DEBUG_A) { printf("rmsl [%d] rmsr [%d] \n",rmsr,rsml);}
+          if(robot_id == ROBOT_DEBUG_A) { printf("rmsl [%d] rmsr [%d] \n",rmsl,rmsr);}
 
    	 // Continue one step
    	 wb_robot_step(TIME_STEP);
