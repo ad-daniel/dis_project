@@ -31,15 +31,16 @@
 
 
 /*Webots 2018b*/
+#define FLOCK_SIZE  5     // Number of robots in flock
+#define TIME_STEP   64    // [ms] Length of time step
 #define MAX_SPEED_WEB 	6.28	// Maximum speed webots
 /*Webots 2018b*/
-#define FLOCK_SIZE     5   	   // Size of flock
-#define TIME_STEP      64      // [ms] Length of time step
+
 
 #define AXLE_LENGTH      0.052   	 // Distance between wheels of robot (meters)
-#define SPEED_UNIT_RADS  0.00628    // Conversion factor from speed unit to radian per second
+#define SPEED_UNIT_RADS  0.00628   // Conversion factor from speed unit to radian per second
 #define WHEEL_RADIUS     0.0205    // Wheel radius (meters)
-#define DELTA_T   	   0.064   	 // Timestep (seconds)
+#define DELTA_T   	     0.064   	 // Timestep (seconds)
 
 #define MAX_COMMUNICATION_DIST 0.25
 
@@ -52,10 +53,10 @@ float RULE2_THRESHOLD = 0.12;  	// Threshold to activate dispersion rule. defaul
 //float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
 float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float weightY;
 
-#define MIGRATORY_URGE 1    		   // Tells the robots if they should just go forward or move towards a specific migratory direction
-#define REYNOLDS 1
-#define BRAITENBERG 1
-#define JOIN 1
+#define MIGRATORY_URGE 1 // Tells the robots if they should just go forward or move towards a specific migratory direction
+#define REYNOLDS       1
+#define BRAITENBERG    1
+#define JOIN           1
 
 #define ABS(x) ((x>=0)?(x):-(x))
 
@@ -63,8 +64,9 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 #define VERBOSE_2  	 0
 #define VERBOSE_3  	 0
 #define VERBOSE_4  	 0
-#define VERBOSE_5           0
-#define VERBOSE_P           1
+#define VERBOSE_5    0
+#define VERBOSE_6    0
+#define VERBOSE_P    0
 #define ROBOT_DEBUG  3      // which robot's information to filter out
 
 #define ROBOT_DEBUG_A 0
@@ -78,8 +80,8 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 
 /*Try other*/
 //#define THRESHOLD_TIME_FLOCK_FORMATION 0  // threshold: if reynold below then begin with Migration and Braitenberg
-#define BETA_MIGRATION 1        // how much of migr_diff to implement during each step 
-#define FLOCK_STABLE  10    //rmsl + rmsr < Flock_stable then get out of beginning flock formation
+#define BETA_MIGRATION 1     // how much of migr_diff to implement during each step 
+#define FLOCK_STABLE   10    // rmsl + rmsr < Flock_stable then get out of beginning flock formation
 /*Webots 2018b*/
 WbDeviceTag left_motor; //handler for left wheel of the robot
 WbDeviceTag right_motor; //handler for the right wheel of the robot
@@ -115,6 +117,7 @@ char* robot_name;
 // tracks which are my flockmates. Myself excluded.
 // 1 : is my flockmate and 0 : isn't my flockmate
 bool flockmates[FLOCK_SIZE] = {0};
+
 float migr_diff = 0;
 int n_flockmates = 0;
 
@@ -707,8 +710,8 @@ int main(){
 
    	 update_self_motion(msl,msr);
 
-          if(robot_id == ROBOT_DEBUG_A) { printf("-----------------------------END OF STEP A---------------------------\n");}
-   	 if(robot_id == ROBOT_DEBUG_B) { printf("-----------------------------END OF STEP B---------------------------\n");}
+     if(robot_id == ROBOT_DEBUG_A && VERBOSE_6) { printf("-----------------------------END OF STEP A---------------------------\n");}
+   	 if(robot_id == ROBOT_DEBUG_B && VERBOSE_6) { printf("-----------------------------END OF STEP B---------------------------\n");}
 
    	 // Continue one step
    	 wb_robot_step(TIME_STEP);
