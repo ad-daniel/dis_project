@@ -27,11 +27,10 @@
 #include "stdio.h"
 #include "string.h"
 typedef enum { false = 0, true = !false } bool;
-//#include "./a_d/advance_ad_scan/e_prox.h"
-//#include "./a_d/advance_ad_scan/e_ad_conv.h"
+
 
 			/*To Change */
-static const int robot_id = 1;
+static const int robot_id = 2;
 static const int robot_group = 0;
 
 			/*Constantes*/
@@ -39,14 +38,14 @@ static const int robot_group = 0;
 #define NB_LEDS			8
 #define MIN_SENS      	350 	// Minimum sensibility value
 #define MAX_SENS      	4096	// Maximum sensibility value
-#define MAX_SPEED     	800 	// Maximum speed
-#define FLOCK_SIZE     	4   	// Size of flock
+#define MAX_SPEED     	300 	// Maximum speed
+#define FLOCK_SIZE     	4   	// Size of flock			
 #define M_PI 3.14159265358979323846
 
 #define AXLE_LENGTH      0.052   		// Distance between wheels of robot (meters)
 #define SPEED_UNIT_RADS  0.00628   		// Conversion factor from speed unit to radian per second
 #define WHEEL_RADIUS     0.0205    		// Wheel radius (meters)
-#define DELTA_T   	   	 0.064   	 	// Timestep (seconds)
+//#define DELTA_T   	   	 0.064   	 	// Timestep (seconds)
 
 #define RULE1_THRESHOLD 	0.1  	   		// Threshold to activate aggregation rule. default 0.1
 #define RULE2_THRESHOLD 	0.12  			// Threshold to activate dispersion rule. default 0.12
@@ -55,22 +54,27 @@ static const int robot_group = 0;
 #define RULE3_WEIGHT 	0.1
 static float migr[2] = {1.,0.};
 
-#define INTIALISATION_STEPS  		30000  		//30 secondes at the beginning to form flock and align with migration (before infinite loop)
 #define REYN_MIGR_RATIO  			0.5 		// TO TUNE: ratio of weights between Reynolds and Migration urge  	 
 #define BRAITENBERG_UPPER_THRESH	2000
 #define BRAITENBERG_LOWER_THRESH 	150 		// below this value, no avoidance
-#define BRAITENBERG_SPEED_BIAS		300
-#define NO_SPEED					1			// The robot does not move -> for test only
+#define BRAITENBERG_SPEED_BIAS		700
 #define WAIT_FOR_SENDING			1			// Avoid to send a to large rate of message -> Problem: Large number of receiver failed... 
+#define WAIT_FOR_SENDING_RESET		1			// Avoid to send a to large rate of message -> Problem: Large number of receiver failed... 
+#define WAIT_FOR_READING			1			// 
+static const int TIME_RESET = 100;
+static const int TIME_READING = 300;
+static const int TIME_SENDING = 300;
+static const int TIME_STEP = 10;
+//static long int time = 0;	// current time in [ms]
 
 // Possible mode
-#define MODE_BRAI	0
-#define MODE_REYN	1
-#define MODE_MIGR	2
-#define MODE_ALL	3
-
-//Active comunication via Bluetooth
-#define VERBOSE 1
+#define MODE_PAUSE 		0
+#define MODE_NO_SPEED 	1
+#define MODE_BRAI		2
+#define MODE_REYN		3
+#define MODE_MIGR		4
+#define MODE_JOINT		5
+#define MODE_ALL		6
 
 // Macro
 #define ABS(x) ((x>=0)?(x):-(x))
@@ -87,18 +91,27 @@ static float my_position[3];			 // X, Z, Theta of the current robot
 static float prev_my_position[3]; 		 // X, Z, Theta of the current robot in the previous time step
 static float speed[FLOCK_SIZE][2];   	 // Speeds calculated with Reynold's rules
 static float relative_speed[FLOCK_SIZE][2];    // Speeds calculated with Reynold's rules
+static long int time = 0;					// Loop counter
 static char buffer[80];
- 
 // tracks which are my flockmates. Myself excluded.
 // 1 : is my flockmate and 0 : isn't my flockmate
 static bool flockmates[FLOCK_SIZE] = {0};
 static float migr_diff = 0;
 
 // Flags
+static bool flag_verbose = true;
 static bool flag_brai = false;
 static bool flag_reyn = false;
 static bool flag_migr = false;
+static bool flag_joint = false;
+static bool flag_speed = true;
 static bool flag_obstacle = false;
+static bool flag_time_reading = true;
+static bool flag_time_sending = true;
+static bool flag_time_reset = true;
+static bool flag_verbose_timer = false;
+static bool flag_verbose_speed = false;
+
 
 int getselector()
 {
@@ -107,6 +120,33 @@ int getselector()
 /*
  * Reset the robot's devices and get its ID
  */
+ void _current_time(void){
+	 time += TIME_STEP;
+ }
+ void _reset_time(void){
+	if(flag_verbose_timer){
+	sprintf(buffer,"[Robot id: %d] [Robot Group: %d]<< RESET INTERUPT >>\r\n",robot_id,robot_group);
+	e_send_uart1_char(buffer, strlen(buffer));
+	}
+	flag_time_reset = false;
+}
+void _sending_time(void){
+	if(flag_verbose_timer){
+	sprintf(buffer,"[Robot id: %d] [Robot Group: %d]<< SENDING INTERUPT >>\r\n",robot_id,robot_group);
+	e_send_uart1_char(buffer, strlen(buffer));
+	}
+	flag_time_sending = false;
+	time += TIME_SENDING;
+}
+void _reading_time(void){
+	if(flag_verbose_timer){
+	sprintf(buffer,"[Robot id: %d] [Robot Group: %d]<< READING INTERUPT >>\r\n",robot_id,robot_group);
+	e_send_uart1_char(buffer, strlen(buffer));
+	}
+	flag_time_reading = false;
+	time += TIME_READING;
+}
+
 int reset()
 {
 	// Initialize system and sensors
@@ -124,7 +164,7 @@ int reset()
 	}
 	
 	// Send message via Bluetooth
-	if(VERBOSE){
+	if(flag_verbose){
 	sprintf(buffer,"[Robot id: %d] [Robot Group: %d]<< Reset Start >>\r\n",robot_id,robot_group);
 	e_send_uart1_char(buffer, strlen(buffer));
 	}
@@ -138,30 +178,60 @@ int reset()
 	
     // rely on selector to define the role
     int selector = getselector();
-	
+	int time = TIME_RESET * (robot_id + 1);
+    e_activate_agenda(_reset_time, time);
+    flag_time_reset = true;
+	do{
+		asm("nop");
+	}while(WAIT_FOR_SENDING_RESET && flag_time_reset);
+	e_destroy_agenda(_reset_time);
+
 	return(selector);
 }
 
 void set_mode(int mode){
 	switch(mode){
+		case MODE_PAUSE:
+			flag_verbose = false;
+			flag_speed = false;
+		break;
+		case MODE_NO_SPEED:
+			flag_brai = false;
+			flag_reyn = false;
+			flag_migr = false;
+			flag_speed = false;
+			if(flag_verbose){
+			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode No_SPEED>>\r\n",robot_id, robot_group);
+			btcomSendString(buffer);	
+			}
+		break;
 		case MODE_BRAI:
 			flag_brai = true;
-			if(VERBOSE){
+			if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Brai>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
 		break;
 		case MODE_REYN:
 			flag_reyn = true;
-			if(VERBOSE){
+			if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Reyn>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
 		break;
 		case MODE_MIGR:
 			flag_migr = true;
-			if(VERBOSE){
+			if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Migr>>\r\n",robot_id, robot_group);
+			btcomSendString(buffer);	
+			}
+		break;
+		case MODE_JOINT:
+			flag_brai = true;
+			flag_migr = true;
+			flag_joint = true;
+			if(flag_verbose){
+			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Joint>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
 		break;
@@ -169,13 +239,13 @@ void set_mode(int mode){
 			flag_brai = true;
 			flag_reyn = true;
 			flag_migr = true;
-			if(VERBOSE){
+			if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode All>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
 		break;
 		default:
-		if(VERBOSE){
+		if(flag_verbose){
 			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Mode Unknown>>\r\n",robot_id, robot_group);
 			btcomSendString(buffer);	
 			}
@@ -185,6 +255,7 @@ void set_mode(int mode){
 		}	
 		break;
 	}
+	flag_verbose = false;
 }
 
 void update_self_motion(int msl, int msr) {
@@ -192,8 +263,8 @@ void update_self_motion(int msl, int msr) {
     float theta = my_position[2];
  
     // Compute deltas of the robot
-    float dr = (float)msr * SPEED_UNIT_RADS * WHEEL_RADIUS * DELTA_T;
-    float dl = (float)msl * SPEED_UNIT_RADS * WHEEL_RADIUS * DELTA_T;
+    float dr = (float)msr * SPEED_UNIT_RADS * WHEEL_RADIUS * time;
+    float dl = (float)msl * SPEED_UNIT_RADS * WHEEL_RADIUS * time;
     float du = (dr + dl)/2.0;
     float dtheta = (dr - dl)/AXLE_LENGTH;
     
@@ -234,8 +305,8 @@ void compute_wheel_speeds(int *msl, int *msr)
     float w = Kw*bearing;
 
     // Convert to wheel speeds!
-    *msl += (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
-    *msr += (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+    *msl = (u - AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
+    *msr = (u + AXLE_LENGTH*w/2.0) * (1000.0 / WHEEL_RADIUS);
     
     // Avoid saturation
     normalize_speed(msl, msr);
@@ -336,37 +407,30 @@ void epuck_send_message(void)
 {
 	long int message;
 	message = (robot_id + (robot_group<<3));
-	if(VERBOSE){
+	if(flag_verbose){
 		sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_send_message: Begin>>\r\n",robot_id, robot_group);
 		btcomSendString(buffer);	
 	}
-	ircomSend(message);	    
-	while (ircomSendDone() == 0);
-	// takes ~15knops for a 32window, avoid putting messages too close...
-	int j;
-	if(WAIT_FOR_SENDING){
-		for(j = 0; j < 15000; j++)	asm("nop");
-		if(VERBOSE){
-			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_send_message: End>>\r\n",robot_id, robot_group);
-			btcomSendString(buffer);	
-		}
-	}
+	ircomSend(message);	  
+	do{
+		while (ircomSendDone() == 0);
+	}while(flag_time_sending);
+		
 }
 void epuck_receive_message(void){
 	
 	bool read_buffer = true;
-    int loop_time = 0;
-    if(VERBOSE){
+    if(flag_verbose){
 		sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: Begin>>\r\n",robot_id, robot_group);
 		btcomSendString(buffer);	
 	}
-	while (read_buffer &&	loop_time< FLOCK_SIZE-1) // Read all the buffer
+	while (read_buffer || flag_time_reading) // Read all the buffer
 	{
 	    IrcomMessage imsg;
 	    ircomPopMessage(&imsg);
 	    if (imsg.error == 0)
 	    {
-			if(VERBOSE){
+			if(flag_verbose){
 				sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: imsg.error = 0>>\r\n",robot_id, robot_group);
 				btcomSendString(buffer);	
 			}
@@ -377,7 +441,8 @@ void epuck_receive_message(void){
 			// get the orientation
 			float theta = imsg.direction;
 			// get the sensor from witch we get the message
-			//int id_sensor = imsg.receivingSensor;
+			int id_sensor = imsg.receivingSensor;
+			
 			// get the robot emitter id
 			int other_robot_id = 0x0007 & message_value;
 			int other_robot_group = message_value>>3;
@@ -391,14 +456,14 @@ void epuck_receive_message(void){
 				relative_pos[other_robot_id][1] = range*sin(theta);   // relative y pos
 				relative_pos[other_robot_id][2] = theta;
 				
-				if(VERBOSE){
+				if(flag_verbose){
 					sprintf(buffer, "Receive successful : [%d]  - distance=%f \t direction=%f \r\n", other_robot_id, (double)range,(double)theta);
 					btcomSendString(buffer);
 				}
 										  
 				// Compute speed in relative coordinates
-				relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/DELTA_T;
-				relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/DELTA_T;
+				relative_speed[other_robot_id][0] = (relative_pos[other_robot_id][0] - prev_relative_pos[other_robot_id][0])/time;
+				relative_speed[other_robot_id][1] = (relative_pos[other_robot_id][1] - prev_relative_pos[other_robot_id][1])/time;
 
 				// Set relative_pos in global coordinates of this time step (x and y only)
 				/* prev_global_pos[other_robot_id][0] = relative_pos[other_robot_id][0];
@@ -412,7 +477,7 @@ void epuck_receive_message(void){
 	    else if (imsg.error > 0)
 	    {
 		// error in transmission
-			if(VERBOSE){
+			if(flag_verbose){
 				sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: imsg.error > 0>>\r\n",robot_id, robot_group);
 				btcomSendString(buffer);	
 			}	
@@ -420,16 +485,19 @@ void epuck_receive_message(void){
 		else
 		{
 			// else imsg.error == -1 -> no message available in the queue
-			if(VERBOSE){
+			if(flag_verbose){
 				sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: imsg.error = -1>>\r\n",robot_id, robot_group);
 				btcomSendString(buffer);	
 			}
 			read_buffer = false;
 		}
-	loop_time++;
 	}
-	if(VERBOSE){
+	if(!flag_verbose || flag_verbose_timer){
+		int j;
+		int sum = 0;
+		for(j=0;j<FLOCK_SIZE;j++){sum +=flockmates[j];}
 		sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<epuck_receive_message: End >>\r\n",robot_id, robot_group);
+		sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<the robot has %d flockmate>>\r\n",robot_id, robot_group,sum);
 		btcomSendString(buffer);	
 	}
 }
@@ -486,6 +554,10 @@ int main(){
     for(;;){
 		// reset flockmates list. It's populated by sim_receive_message
 		int i;   						 // Loop counter
+		time = 0; // reset time loop;
+		// Start current time
+		e_activate_agenda(_current_time, TIME_STEP);
+		
 		for(i=0;i<FLOCK_SIZE;i++){flockmates[i] = 0;}
 		rmsl = 0; rmsr = 0;
 		bmsl = 0; bmsr = 0;
@@ -508,15 +580,26 @@ int main(){
 			}
 			normalize_speed(&bmsr, &bmsl);
 			}    
+		
+		e_destroy_agenda(_current_time);
 
 		// Send and get information
+		flag_time_sending = true;
+		e_activate_agenda(_sending_time, TIME_SENDING);
 		epuck_send_message(); // sending a ping to other robot, so they can measure their distance to this robot
-
+		e_destroy_agenda(_sending_time);
+		
 		/// Compute self position
 		prev_my_position[0] = my_position[0];
 		prev_my_position[1] = my_position[1];
-
+		
+		flag_time_reading = true;
+		e_activate_agenda(_reading_time, TIME_READING);
 		epuck_receive_message();
+		e_destroy_agenda(_reading_time);
+		
+		// Get current time
+		e_activate_agenda(_current_time, TIME_STEP);
 
 		if(flag_reyn){
 			// Reynold's rules with all previous info (updates the speed[][] table)
@@ -528,9 +611,9 @@ int main(){
 		if(flag_migr){
 			//attention on a remis à 0 dans reynolds et braitenberg!!!!!!!!!!!!!!!!!!!!!
 			migration_urge();
-			if(!flag_obstacle){
+			/*if(!flag_obstacle){
 			mmsl -= BETA_MIGRATION * migr_diff;
-			mmsr += BETA_MIGRATION * migr_diff;}
+			mmsr += BETA_MIGRATION * migr_diff;}*/
 			compute_wheel_speeds(&mmsl, &mmsr);
 		}   	 
 
@@ -550,16 +633,39 @@ int main(){
 
 		// A Changer Hugo
 		// Set speed
-		if(NO_SPEED){
+		if(!flag_speed){
 			msl = 0;
 			msr = 0;
 		}
+		switch(mode){
+		case MODE_REYN:
+			msl = rmsl;
+			msr = rmsr;
+		break;	
+		case MODE_BRAI:
+			msl = bmsl;
+			msr = bmsr;
+		break;
+		case MODE_MIGR:
+			msl = mmsl;
+			msr = mmsr;
+		break;
+		}
+		
+		if(flag_verbose_speed){
+			sprintf(buffer, "[Robot id: %d]<< msr = %d | msl = %d >>\r\n",robot_id,msr, msl );
+			btcomSendString(buffer);
+		}
+		
 		e_set_speed_left(msl);
 		e_set_speed_right(msr);
 
 		update_self_motion(msl,msr);
 
 		count++;
+		if(flag_verbose_timer){
+			sprintf(buffer, "[Robot id: %d] [Robot Group: %d] <<Time Loop = %ld >>\r\n",robot_id, robot_group,time);
+			btcomSendString(buffer);	
 		}
-
+	}
 }

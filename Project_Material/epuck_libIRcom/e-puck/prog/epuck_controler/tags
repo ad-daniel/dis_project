@@ -4,36 +4,45 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-ABS	epuck.c	76;"	d	file:
-AXLE_LENGTH	epuck.c	46;"	d	file:
-BETA_MIGRATION	epuck.c	79;"	d	file:
-BRAITENBERG_LOWER_THRESH	epuck.c	61;"	d	file:
-BRAITENBERG_SPEED_BIAS	epuck.c	62;"	d	file:
-BRAITENBERG_UPPER_THRESH	epuck.c	60;"	d	file:
-DELTA_T	epuck.c	49;"	d	file:
-FLOCK_SIZE	epuck.c	43;"	d	file:
-INTIALISATION_STEPS	epuck.c	58;"	d	file:
-MAX_SENS	epuck.c	41;"	d	file:
-MAX_SPEED	epuck.c	42;"	d	file:
-MIN_SENS	epuck.c	40;"	d	file:
-MODE_ALL	epuck.c	70;"	d	file:
-MODE_BRAI	epuck.c	67;"	d	file:
-MODE_MIGR	epuck.c	69;"	d	file:
-MODE_REYN	epuck.c	68;"	d	file:
-M_PI	epuck.c	44;"	d	file:
-NB_LEDS	epuck.c	39;"	d	file:
-NB_SENSORS	epuck.c	38;"	d	file:
-NO_SPEED	epuck.c	63;"	d	file:
-REYN_MIGR_RATIO	epuck.c	59;"	d	file:
-RULE1_THRESHOLD	epuck.c	51;"	d	file:
-RULE1_WEIGHT	epuck.c	53;"	d	file:
-RULE2_THRESHOLD	epuck.c	52;"	d	file:
-RULE2_WEIGHT	epuck.c	54;"	d	file:
-RULE3_WEIGHT	epuck.c	55;"	d	file:
-SPEED_UNIT_RADS	epuck.c	47;"	d	file:
-VERBOSE	epuck.c	73;"	d	file:
-WAIT_FOR_SENDING	epuck.c	64;"	d	file:
-WHEEL_RADIUS	epuck.c	48;"	d	file:
+ABS	epuck.c	80;"	d	file:
+AXLE_LENGTH	epuck.c	45;"	d	file:
+BETA_MIGRATION	epuck.c	83;"	d	file:
+BRAITENBERG_LOWER_THRESH	epuck.c	59;"	d	file:
+BRAITENBERG_SPEED_BIAS	epuck.c	60;"	d	file:
+BRAITENBERG_UPPER_THRESH	epuck.c	58;"	d	file:
+FLOCK_SIZE	epuck.c	42;"	d	file:
+MAX_SENS	epuck.c	40;"	d	file:
+MAX_SPEED	epuck.c	41;"	d	file:
+MIN_SENS	epuck.c	39;"	d	file:
+MODE_ALL	epuck.c	77;"	d	file:
+MODE_BRAI	epuck.c	73;"	d	file:
+MODE_JOINT	epuck.c	76;"	d	file:
+MODE_MIGR	epuck.c	75;"	d	file:
+MODE_NO_SPEED	epuck.c	72;"	d	file:
+MODE_PAUSE	epuck.c	71;"	d	file:
+MODE_REYN	epuck.c	74;"	d	file:
+M_PI	epuck.c	43;"	d	file:
+NB_LEDS	epuck.c	38;"	d	file:
+NB_SENSORS	epuck.c	37;"	d	file:
+REYN_MIGR_RATIO	epuck.c	57;"	d	file:
+RULE1_THRESHOLD	epuck.c	50;"	d	file:
+RULE1_WEIGHT	epuck.c	52;"	d	file:
+RULE2_THRESHOLD	epuck.c	51;"	d	file:
+RULE2_WEIGHT	epuck.c	53;"	d	file:
+RULE3_WEIGHT	epuck.c	54;"	d	file:
+SPEED_UNIT_RADS	epuck.c	46;"	d	file:
+TIME_READING	epuck.c	/^static const int TIME_READING = 300;$/;"	v	file:
+TIME_RESET	epuck.c	/^static const int TIME_RESET = 100;$/;"	v	file:
+TIME_SENDING	epuck.c	/^static const int TIME_SENDING = 300;$/;"	v	file:
+TIME_STEP	epuck.c	/^static const int TIME_STEP = 10;$/;"	v	file:
+WAIT_FOR_READING	epuck.c	63;"	d	file:
+WAIT_FOR_SENDING	epuck.c	61;"	d	file:
+WAIT_FOR_SENDING_RESET	epuck.c	62;"	d	file:
+WHEEL_RADIUS	epuck.c	47;"	d	file:
+_current_time	epuck.c	/^ void _current_time(void){$/;"	f
+_reading_time	epuck.c	/^void _reading_time(void){$/;"	f
+_reset_time	epuck.c	/^ void _reset_time(void){$/;"	f
+_sending_time	epuck.c	/^void _sending_time(void){$/;"	f
 bool	epuck.c	/^typedef enum { false = 0, true = !false } bool;$/;"	t	typeref:enum:__anon1	file:
 buffer	epuck.c	/^static char buffer[80];$/;"	v	file:
 compute_wheel_speeds	epuck.c	/^void compute_wheel_speeds(int *msl, int *msr)$/;"	f
@@ -42,9 +51,17 @@ epuck_receive_message	epuck.c	/^void epuck_receive_message(void){$/;"	f
 epuck_send_message	epuck.c	/^void epuck_send_message(void)  $/;"	f
 false	epuck.c	/^typedef enum { false = 0, true = !false } bool;$/;"	e	enum:__anon1	file:
 flag_brai	epuck.c	/^static bool flag_brai = false;$/;"	v	file:
+flag_joint	epuck.c	/^static bool flag_joint = false;$/;"	v	file:
 flag_migr	epuck.c	/^static bool flag_migr = false;$/;"	v	file:
 flag_obstacle	epuck.c	/^static bool flag_obstacle = false;$/;"	v	file:
 flag_reyn	epuck.c	/^static bool flag_reyn = false;$/;"	v	file:
+flag_speed	epuck.c	/^static bool flag_speed = true;$/;"	v	file:
+flag_time_reading	epuck.c	/^static bool flag_time_reading = true;$/;"	v	file:
+flag_time_reset	epuck.c	/^static bool flag_time_reset = true;$/;"	v	file:
+flag_time_sending	epuck.c	/^static bool flag_time_sending = true;$/;"	v	file:
+flag_verbose	epuck.c	/^static bool flag_verbose = true;$/;"	v	file:
+flag_verbose_speed	epuck.c	/^static bool flag_verbose_speed = true;$/;"	v	file:
+flag_verbose_timer	epuck.c	/^static bool flag_verbose_timer = false;$/;"	v	file:
 flockmates	epuck.c	/^static bool flockmates[FLOCK_SIZE] = {0};$/;"	v	file:
 getselector	epuck.c	/^int getselector()$/;"	f
 global2rel	epuck.c	/^void global2rel(float* v_global, float* v_ref){$/;"	f
@@ -63,9 +80,10 @@ relative_speed	epuck.c	/^static float relative_speed[FLOCK_SIZE][2];    \/\/ Spe
 reset	epuck.c	/^int reset()$/;"	f
 reynolds_rules	epuck.c	/^void reynolds_rules() {$/;"	f
 robot_group	epuck.c	/^static const int robot_group = 0;$/;"	v	file:
-robot_id	epuck.c	/^static const int robot_id = 1;$/;"	v	file:
+robot_id	epuck.c	/^static const int robot_id = 0;$/;"	v	file:
 set_final_speed	epuck.c	/^float set_final_speed(int b_speed, int r_speed, int m_speed, int max_sens) {  \/\/weights for each of the speed (wb: Braitenberg, wm: Migration, wr: Reynolds)$/;"	f
 set_mode	epuck.c	/^void set_mode(int mode){$/;"	f
 speed	epuck.c	/^static float speed[FLOCK_SIZE][2];   	 \/\/ Speeds calculated with Reynold's rules$/;"	v	file:
+time	epuck.c	/^static long int time = 0;					\/\/ Loop counter$/;"	v	file:
 true	epuck.c	/^typedef enum { false = 0, true = !false } bool;$/;"	e	enum:__anon1	file:
 update_self_motion	epuck.c	/^void update_self_motion(int msl, int msr) {$/;"	f
