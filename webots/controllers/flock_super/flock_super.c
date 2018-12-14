@@ -2,9 +2,9 @@
 /* File:         performance_estimation.c                                    */
 /* Version:      1.0                                                         */
 /* Date:         10-Oct-14                                                   */
-/* Description:  estimating the performance of a formation 		     */
+/* Description:  estimating the performance of a formation         */
 /*                                                                           */
-/* Author: 	 10-Oct-14 by Ali marjovi				     */
+/* Author:   10-Oct-14 by Ali marjovi            */
 /*****************************************************************************/
 
 #define _GNU_SOURCE
@@ -18,35 +18,37 @@
 #include <webots/emitter.h>
 #include <webots/supervisor.h>
 
-#define FLOCK_SIZE  5 		// Number of robots in flock
-#define TIME_STEP   64		// [ms] Length of time step
+#define FLOCK_SIZE  5     // Number of robots in flock
+#define TIME_STEP   64    // [ms] Length of time step
 #define VMAX        0.1287
 
+#define CROSSING    1
 #define OPTIMIZE    0
 #define READ        0
 #define CREATE      1 
 #define REWRITE     2 
 
-WbNodeRef robs[FLOCK_SIZE];		// Robots nodes
-WbFieldRef robs_trans[FLOCK_SIZE];	// Robots translation fields
-WbFieldRef robs_rotation[FLOCK_SIZE];	// Robots rotation fields
+#define VERBOSE_M   0
+
+WbNodeRef robs[2*FLOCK_SIZE];   // Robots nodes
+WbFieldRef robs_trans[2*FLOCK_SIZE];  // Robots translation fields
+WbFieldRef robs_rotation[2*FLOCK_SIZE]; // Robots rotation fields
 WbDeviceTag receiver;
 WbDeviceTag emitter;
 
-float loc[FLOCK_SIZE][3];		// Location of everybody in the flock
+float loc[2*FLOCK_SIZE][3];   // Location of everybody in the flock
 
-int offset;				// Offset of robots number
+int offset;       // Offset of robots number
 float migrx = 1;
-float migrz = 0;			// Migration vector
-float orient_migr; 			// Migration orientation
+float migrz = 0;      // Migration vector
+float orient_migr;      // Migration orientation
 int t;
 
 double **data_glob;//Mathilde
 double **data_line;
 // good results ...
-
-double default_weight[5] = { 8.1, 7.5, 3.1, 0.01, 0.01 };
-
+float default_weight[3] = { 10., 3.1, 0.5};
+float default_RATIO = 1.;
   
 
 /*
@@ -57,17 +59,11 @@ void send_default_params(){
   char message[255]; 
 
   // send default parameters
-  
-  // Also good results ...
-  // float data_glob[5] = { }
-
-  printf("Sending migr [%.3f][%.3f] and default parameters [%.3f][%.3f][%.3f][%.3f][%.3f] \n", migrx, migrz, default_weight[0], default_weight[1], default_weight[2], default_weight[3], default_weight[4]);
-  sprintf(message, "%f#%f##%f#%f#%f#%f#%f\n", migrx, migrz, default_weight[0], default_weight[1], default_weight[2], default_weight[3], default_weight[4]);
+  printf("Sending default parameters [%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n", default_weight[0], default_weight[1], default_weight[2], default_RATIO, migrx, migrz);
+  sprintf(message, "%f#%f##%f#%f#%f#%f\n", migrx, migrz, default_weight[0], default_weight[1], default_weight[2], default_RATIO);
 
   wb_emitter_send(emitter, message, strlen(message) + 1);
 }
-
-
 
 /*.....................................................Optimisation...............................................*/
 /*
@@ -111,7 +107,7 @@ void handle_line_csv(FILE *line_to_read, int action, double line, double **data_
     //printf("Step2\n");
     read_csv(1,1,name, data_l);
   }else if(action==CREATE){
-  printf("line number init %f\n", line );
+    if(VERBOSE_M){ printf("line number init %f\n", line ); }
     line_to_read = fopen(name,"w");
     data_line[0][0] = line; 
     //fprintf(line_to_read, "%f,\n", line);
@@ -132,8 +128,8 @@ void handle_line_csv(FILE *line_to_read, int action, double line, double **data_
 void test_param(FILE *params, FILE *line_to_read){                              
   /*Create the .cvs file to test differents parameters, and upload it at every new reload*/
   float WEIGHT1 = 0.7; float WEIGHT2 = (0.02/10); float WEIGHT3 = (1.0/10); 
-  float WEIGHTX =(0.01/10); float WEIGHTY =(0.01/10);
-  float weights[5] = {WEIGHT1, WEIGHT2, WEIGHT3, WEIGHTX, WEIGHTY};
+  float RATIO = 0.5; 
+  float weights[4] = {WEIGHT1, WEIGHT2, WEIGHT3, RATIO};
   int line = 1; 
   
   char *file_name;
@@ -141,13 +137,13 @@ void test_param(FILE *params, FILE *line_to_read){
   char message[255]; 
     
   /* Indice param, init, resol and final to be changed manually to give the parameter and its range */  
-  float init = 1; float resol = 0.5; float final = 10; int nb_param_tuned = 2; 
+  float init = 1; float resol = 1; float final = 10; int nb_param_tuned = 3; 
   int row = 1 + pow((floor(final-init)/resol + 1),nb_param_tuned);
-  printf("nb lines %d\n", row);
+  if(VERBOSE_M){printf("nb lines %d\n", row);}
   int col = 5;
   
   //Create a .csv file with the different information about the simulation tested
-  asprintf (&file_name, "Test_parameters_WEIGHT 1 and 2 Reynolds_[%.3f,%.3f,%.3f].csv", init, resol, final);
+  asprintf (&file_name, "Test_parameters_WEIGHTS Reynolds_[%.3f,%.3f,%.3f].csv", init, resol, final);
 
   
   //Allocate space to store usefull param for the current simulation
@@ -163,7 +159,7 @@ void test_param(FILE *params, FILE *line_to_read){
   
   //Create or read file that contains the line we need to read next
   if((line_to_read = fopen("Line_to_read.csv", "r"))){
-    printf("Ready to read line file\n");
+    if(VERBOSE_M){printf("Ready to read line file\n");}
     handle_line_csv(line_to_read, READ, 0, data_line);
     //printf("data line value is : %f\n", data_line[0][0]);
     fclose(line_to_read);
@@ -176,11 +172,10 @@ void test_param(FILE *params, FILE *line_to_read){
   
   //Depending on the existence of the parameter file, read or create + read it, and extract parameters usefull for the current simulation  
   if((params = fopen(file_name, "r"))){
-      printf("File already existing\n");	
+      if(VERBOSE_M){printf("File already existing\n");} 
     
       if(params == NULL) {
           perror("No line found to read");
-          //printf("No line found to read\n");
       }
      
      if( fgets (str, 60, params)!=NULL ) {
@@ -197,13 +192,13 @@ void test_param(FILE *params, FILE *line_to_read){
     float i = init; float j = init; float k = init;  
     for(i=init; i<=final; i += resol){
       for(j=init; j<=final; j += resol){
-        //for(k=init; k<=final; k+=resol){
-        //  weights[2] = i/10;
-          weights[1] = i/10;
-          weights[0] = j/10;
-          fprintf(params, "%.3f,%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2], weights[3], weights[4]);
-          //printf("%.3f,%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2], weights[3], weights[4]);
-        //}
+        for(k=init; k<=final; k+=resol){
+          weights[2] = i/10;
+          weights[1] = j/10;
+          weights[0] = k/10;
+          fprintf(params, "%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2],RATIO);
+          if(VERBOSE_M){printf("%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2], RATIO);}
+        }
       }
     }
     read_csv(row, col, file_name, data_glob);
@@ -213,8 +208,7 @@ void test_param(FILE *params, FILE *line_to_read){
   
   //Send to the robot controller
   int lp = (int)data_line[0][0];
-  printf("Param to be sent [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n", data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3], data_glob[lp][4], migrx, migrz);
-  sprintf(message, "%f#%f##%f#%f#%f#%f#%f\n", migrx, migrz, data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3], data_glob[lp][4]);
+  sprintf(message, "%f#%f##%f#%f#%f#%f\n", migrx, migrz, data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3]);
   //printf("%s\n", message);
   if(wb_emitter_send(emitter, message, strlen(message) + 1)){printf("Send\n");}
   printf("actual line %f\n", data_line[0][0]);
@@ -227,21 +221,30 @@ void test_param(FILE *params, FILE *line_to_read){
  * Initialize flock position and devices
  */
 void reset(void) {
-	wb_robot_init();
+  wb_robot_init();
 
-	emitter = wb_robot_get_device("emitter"); //Mathilde
+  emitter = wb_robot_get_device("emitter"); //Mathilde
 
 
-	char rob[7] = "epuck0";
-	int i;
-	for (i=0;i<FLOCK_SIZE;i++) {
-		sprintf(rob,"epuck%d",i+offset);
-		robs[i] = wb_supervisor_node_get_from_def(rob);
-		robs_trans[i] = wb_supervisor_node_get_field(robs[i],"translation");
-		robs_rotation[i] = wb_supervisor_node_get_field(robs[i],"rotation");
-	}
-
-	printf("Reset supervisor\n");
+  char rob[7] = "epuck0";
+  int i;
+  
+  for (i=0;i<FLOCK_SIZE;i++) {
+    sprintf(rob,"epuck%d",i+offset);
+    robs[i] = wb_supervisor_node_get_from_def(rob);
+    //printf("[%s]\n", (char *)rob);
+    robs_trans[i] = wb_supervisor_node_get_field(robs[i],"translation");
+    robs_rotation[i] = wb_supervisor_node_get_field(robs[i],"rotation");
+    
+    if(CROSSING){
+                          robs[i+FLOCK_SIZE] = wb_supervisor_node_get_from_def(rob);
+                          //printf("[%s]\n", (char *)rob);
+                          robs_trans[i+FLOCK_SIZE] = wb_supervisor_node_get_field(robs[i+FLOCK_SIZE],"translation");
+                          robs_rotation[i+FLOCK_SIZE] = wb_supervisor_node_get_field(robs[i+FLOCK_SIZE],"rotation");
+    }
+  }
+  
+  if(VERBOSE_M) {printf("Reset supervisor\n"); }
 
 }
 
@@ -251,49 +254,53 @@ void reset(void) {
 /*
  * Compute performance metric.
  */
-void compute_performance (float* fit_o, float* fit_c, float * fit_v){
-	float real = 0.0;   float imm = 0.0;
-	float avg_loc[2] = {0,0};
-	static float avg_loc_old[2] = {0,0};
-	float sum_dist = 0.0;
-	float projection;
+void compute_performance (float* fit_o, float* fit_c, float * fit_v, int start){
+  float real = 0.0;   float imm = 0.0;
+  float avg_loc[2] = {0,0};
+  static float avg_loc_old[2] = {0,0};
+  float sum_dist = 0.0;
+  float projection;
+  
+  // Compute averages position
+  for(int i=start; i<start+FLOCK_SIZE; i++) {
+   for (int j=0;j<2;j++) {
+     avg_loc[j] += loc[i][j];
+     }
+  }
+  for (int j = 0; j<2; j++){
+  avg_loc[j] /= FLOCK_SIZE;
+  }
 
-	// Compute averages position
-	for(int i=0; i<FLOCK_SIZE; i++) {
-	 for (int j=0;j<2;j++) {
-	   avg_loc[j] += loc[i][j];
-	   }
-	}
-	for (int j = 0; j<2; j++){
-	avg_loc[j] /= FLOCK_SIZE;
-	}
+  // compute alignment between the robots
+  for(int i=start; i<start+FLOCK_SIZE; i++){
+  real += cos(loc[i][2]);
+  imm += sin(loc[i][2]); 
+  }
 
-	// compute alignment between the robots
-	for(int i = 0; i < FLOCK_SIZE; i++){
-	real += cos(loc[i][2]);
-	imm += sin(loc[i][2]); 
-	}
+  * fit_o = sqrt(real * real + imm * imm) / FLOCK_SIZE;
 
-	* fit_o = sqrt(real * real + imm * imm) / FLOCK_SIZE;
+  // compute dispersion of robots
+  for (int i=start; i<start+FLOCK_SIZE; i++){
+  sum_dist += sqrt( pow(loc[i][0]-avg_loc[0],2)+pow(loc[i][1]-avg_loc[1],2));
+  }
 
-	// compute dispersion of robots
-	for (int i = 0; i < FLOCK_SIZE; i++){
-	sum_dist += sqrt( pow(loc[i][0]-avg_loc[0],2)+pow(loc[i][1]-avg_loc[1],2));
-	}
+  * fit_c = 1 / (1 + (sum_dist/FLOCK_SIZE));
 
-	* fit_c = 1 / (1 + (sum_dist/FLOCK_SIZE));
+  // average displacement velocity along direction of migratory urge
+  float speed[2] = { avg_loc[0] - avg_loc_old[0], avg_loc[1] - avg_loc_old[1] };
+  printf("speed [%f][%f]\n", speed[0], speed[1]);
+  if(CROSSING && (start!=0)){
+                migrx *= -1; migrz *=-1;
+  }
+  projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
+  if(VERBOSE_M){printf("s_cdm x [%f], s_cdm y [%f], projection [%f]\n", speed[0],speed[1], projection);}
 
-	// average displacement velocity along direction of migratory urge
-	float speed[2] = { avg_loc[0] - avg_loc_old[0], avg_loc[1] - avg_loc_old[1] };
-	projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
+  * fit_v = projection > 0.0 ? projection/VMAX : 0.0; 
 
-	* fit_v = projection > 0.0 ? projection/VMAX : 0.0; 
-
-	// update location info for next timestep
-	avg_loc_old[0] = avg_loc[0];
-	avg_loc_old[1] = avg_loc[1];
+  // update location info for next timestep
+  avg_loc_old[0] = avg_loc[0];
+  avg_loc_old[1] = avg_loc[1];
 }
-
 
 
 /*
@@ -301,71 +308,96 @@ void compute_performance (float* fit_o, float* fit_c, float * fit_v){
  */
  
 int main(int argc, char *args[]) {
-	int i;			// Index
+  int i;      // Index
   
-	reset();
+  reset();
 
-	// Compute reference fitness values
-	
-	float fit_cohesion;			// Performance metric for cohesion
-	float fit_orientation;			// Performance metric for orientation
-	float fit_velocity;
-	float performance;	
+  // Compute reference fitness values
+  
+  float fit_cohesion;     // Performance metric for cohesion
+  float fit_orientation;      // Performance metric for orientation
+  float fit_velocity;
+  float performance_instant;  
+  float performance_overall; float sum_perf = 0; 
 
-	//Mathilde	
-	FILE *fp = NULL;
-	FILE *fparam = NULL; 
-	FILE *line_to_read = NULL; 
-	int nb_repetition = 0; //find a way to count nb of simulation with the same parameters
-	
-	if(OPTIMIZE){ 
-		printf("OPTIMIZATION: ACTIVE\n");
-		test_param(fparam, line_to_read);
-	}
-	else{
-		printf("OPTIMIZATION: INACTIVE\n");
-		send_default_params();
-	}
-		
-	for(;;) {
-		wb_robot_step(TIME_STEP);
-		
-		if (t % 100 == 0) {
-			for (i=0;i<FLOCK_SIZE;i++) {
-				// Get data
-				loc[i][0] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[0]; // X
-				loc[i][1] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[2]; // Z
-				loc[i][2] = wb_supervisor_field_get_sf_rotation(robs_rotation[i])[3]; // THETA				
-    		}
-
-			//Compute and normalize fitness values
-			compute_performance(&fit_orientation, &fit_cohesion, & fit_velocity);
-	  		performance = fit_orientation * fit_cohesion * fit_velocity;
-			//printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: performance %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance);			
-			
-			//Mathilde
-			if(OPTIMIZE && (t != 0)){
+  //Mathilde  
+  FILE *fp = NULL;
+  FILE *fparam = NULL; 
+  FILE *line_to_read = NULL; 
+  int nb_repetition = 0; //find a way to count nb of simulation with the same parameters
+  
+  if(OPTIMIZE){ 
+    printf("OPTIMIZATION: ACTIVE\n");
+    test_param(fparam, line_to_read);
+  }
+  else{
+    printf("OPTIMIZATION: INACTIVE\n");
+    send_default_params();
+  }
+    
+  for(;;) {
+    wb_robot_step(TIME_STEP);
+    
+  if (t % 100 == 0) {
+              for (i=0;i<FLOCK_SIZE;i++) {
+              // Get data
+              //char* robot_name;
+              //robot_name = (char*) wb_supervisor_node_get_def();
+              //WbNodeRef robot_node = wb_supervisor_node_get_from_def("MY_ROBOT");
+              //printf("%s\n",robot_name);
+    loc[i][0] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[0]; // X
+    loc[i][1] = wb_supervisor_field_get_sf_vec3f(robs_trans[i])[2]; // Z
+    loc[i][2] = wb_supervisor_field_get_sf_rotation(robs_rotation[i])[3]; // THETA
+    //if(t==0){printf("angle init %f\n",loc[i][2]);}  
+    if(CROSSING){
+                          loc[i+FLOCK_SIZE][0] = wb_supervisor_field_get_sf_vec3f(robs_trans[i+FLOCK_SIZE])[0]; // X
+                          loc[i+FLOCK_SIZE][1] = wb_supervisor_field_get_sf_vec3f(robs_trans[i+FLOCK_SIZE])[2]; // Z
+                          loc[i+FLOCK_SIZE][2] = wb_supervisor_field_get_sf_rotation(robs_rotation[i+FLOCK_SIZE])[3]; // THETA
+    }
+          
+              }
+              //Compute and normalize fitness values
+              if(CROSSING){
+                int nb_flocks = 2; 
+                for(i=0; i<nb_flocks; i++){
+                    compute_performance(&fit_orientation, &fit_cohesion, & fit_velocity, i*FLOCK_SIZE);
+                    performance_instant = fit_orientation * fit_cohesion * fit_velocity;
+                    sum_perf += performance_instant; 
+                    performance_overall = sum_perf / t; 
+                    printf("FLOCK%d [time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: perf_instant %1.6f ::: perf_overall %1.6f\n",i, t, fit_orientation, fit_cohesion, fit_velocity, performance_instant, performance_overall);      
+                } 
+              }else{
+                    compute_performance(&fit_orientation, &fit_cohesion, & fit_velocity, CROSSING);
+                    performance_instant = fit_orientation * fit_cohesion * fit_velocity;
+                    sum_perf += performance_instant; 
+                    performance_overall = sum_perf / t; 
+                    printf("[time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: perf_instant %1.6f ::: perf_overall %1.6f\n", t, fit_orientation, fit_cohesion, fit_velocity, performance_instant, performance_overall);      
+              }
+                
+              //Mathilde
+              if(OPTIMIZE && (t != 0)){ //If 2 flocks, take the values of the 2nd one
                 nb_repetition += 1; 
                 fp = fopen("Reynolds_performance.csv" ,"a");
-                fprintf(fp, "%d,%d,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance);
+                fprintf(fp, "%d,%d,%f,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance_instant, performance_overall);
                 fclose(fp);
-                printf("%d,%d,%f,%f,%f,%f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance);
-                                  }	
-			}
-
-			if(t==40000 && OPTIMIZE){
+                //printf("%d,%d,%f,%f,%f,%f, %f\n",nb_repetition,t, fit_orientation, fit_cohesion, fit_velocity, performance_instant, performance_overall);
+                printf("velocity [%f]\n", fit_velocity);
+              } 
+  }
+  
+  if(t==80000 && OPTIMIZE){
                 printf("Exit condition\n");
                           
                 if(data_line[0][0] <= data_glob[0][0]-1){
-             		data_line[0][0] += 1;
+                data_line[0][0] += 1;
                     printf("next line number is %f\n", data_line[0][0]);
                     handle_line_csv(line_to_read, REWRITE, data_line[0][0], data_line);
                     wb_supervisor_world_reload();
                 }
                 else{
-          	    	//wb_supervisor_simulation_quit();
+                  //wb_supervisor_simulation_quit();
                     printf("In pause mode\n");
-                	wb_supervisor_simulation_set_mode(WB_SUPERVISOR_SIMULATION_MODE_PAUSE);
+                  wb_supervisor_simulation_set_mode(WB_SUPERVISOR_SIMULATION_MODE_PAUSE);
                 }
             }
                       
