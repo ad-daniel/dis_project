@@ -58,8 +58,11 @@ int t;
 double **data_glob;
 double **data_line;
 // good results ...
-float default_weight[3] = {10., 3.1, 0.5};
+
+double default_weight[5] = { 6, 5.2, 1.3, 0.01, 0.01 };
+
 float default_RATIO = 1.;
+
   
 
 /*
