@@ -26,10 +26,9 @@
 #define NB_SENSORS    	8   	   // Number of distance sensors
 #define MIN_SENS      	350 	// Minimum sensibility value
 #define MAX_SENS      	4096	// Maximum sensibility value
-#define MAX_SPEED     	700 	// Maximum speed
-#define JOIN_SPEED         100     // Speed added in join when join mode (retunrning to migr_diff = 0)
+//#define MAX_SPEED     	600 	// Maximum speed
+//#define JOIN_SPEED         200     // Speed added in join when join mode (retunrning to migr_diff = 0)
 
-#define TOO_SLOW 150               //The robot does almost only Reynolds but is alone
 /*Webots 2018b*/
 #define MAX_SPEED_WEB 	6.28	// Maximum speed webots
 /*Webots 2018b*/
@@ -65,10 +64,10 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 #define VERBOSE_4  	 0
 #define VERBOSE_5           0
 #define VERBOSE_P           1
-#define ROBOT_DEBUG  3      // which robot's information to filter out
+#define ROBOT_DEBUG  111      // which robot's information to filter out
 
-#define ROBOT_DEBUG_A 0
-#define ROBOT_DEBUG_B 1
+#define ROBOT_DEBUG_A 4
+#define ROBOT_DEBUG_B 111
 
 /*Added by Pauline for weights*/
 static float REYN_MIGR_RATIO =   	5.; // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
@@ -121,7 +120,8 @@ int n_flockmates = 0;
 
 bool no_reynolds = 0;
 
-
+int join_speed = 100;     // Speed added in join when join mode (retunrning to migr_diff = 0)
+int max_speed_bmr = 700;      // Maximum speed
 /*
  * Reset the robot's devices and get its ID
  */
@@ -258,7 +258,7 @@ void compute_wheel_speeds(int *msl, int *msr)
     
     // Avoid saturation
     
-    normalize_speed(msl, msr, MAX_SPEED);
+    normalize_speed(msl, msr, max_speed_bmr);
     
     if(robot_id == 0 && VERBOSE){printf("[msr] : %d, [msl] : %d \n",*msr,*msl);}
 
@@ -319,7 +319,7 @@ void reynolds_rules() {
    		 n_flockmates++;
    	 }
     }
-    if(VERBOSE_P && ROBOT_DEBUG == robot_id){ printf("%d flockmates\n", n_flockmates); }
+    if(VERBOSE_P && ROBOT_DEBUG_A == robot_id){ printf("%d flockmates\n", n_flockmates); }
     
     if(n_flockmates>0){
    	 for(j=0;j<2;j++){
@@ -494,35 +494,25 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int j_speed, int ma
     if(f_computeNot){
      	 //wb prop to max_sens	and	wr = REYN_MIGR_RATIO * wm	and	wr + wb + wm = 1
      	if(ROBOT_DEBUG == robot_id && VERBOSE_5){printf("[max_sensor] [%d] \n",max_sens);}
-
          if(ROBOT_DEBUG == robot_id && VERBOSE_5){printf("[log(max_sensor)] [%f] \n",log(max_sens));}
-           /*if(!r_speed){
-           REYN_MIGR_RATIO /= 2.;
-           }else{
-           (REYN_MIGR_RATIO< 2.? REYN_MIGR_RATIO *=1.2:2.);
-           }*/
            
-           if(robot_id == ROBOT_DEBUG && VERBOSE_P) printf("REY/MIG = %f \n",REYN_MIGR_RATIO);
-     	 if (log(max_sens) > log(BRAITENBERG_LOWER_THRESH)){
+         if(robot_id == ROBOT_DEBUG && VERBOSE_P) printf("REY/MIG = %f \n",REYN_MIGR_RATIO);
+     	 
+     	if (log(max_sens) > log(BRAITENBERG_LOWER_THRESH)){
      		 wb = log(max_sens) / log(BRAITENBERG_UPPER_THRESH); // Above upper threshold, do only avoidance;
      		 wb = wb > 1.0 ? 1.0 : wb;
      		 wj = 0;
      	 } else {
      		 wb = 0.0;
-     		 if(n_flockmates > 0) {
-     		     wj = BETA_MIGRATION/(float) n_flockmates;  //want less importance if has more flockmates
-     		 }else{ 
-     		     wj = BETA_MIGRATION;
-     		 }
-   
+     		 wj = 1 - n_flockmates/(FLOCK_SIZE - 1);
      	 }
      	 
      	 if(no_reynolds) {
-              wm = 1 - wb;
-
+              wm = 1 - wb;     
+              wr = 0;
    	 } else {
-                 wm = (1 - wb) / (float)(1 + REYN_MIGR_RATIO);
-         	wr = REYN_MIGR_RATIO *  wm; 
+              wm = (1 - wb) / (float)(1 + REYN_MIGR_RATIO);
+              wr = REYN_MIGR_RATIO *  wm; 
          }
      	 
     }
@@ -561,19 +551,24 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int j_speed, int ma
 
      //Condition pour moins faire reynolds si on avance pas
 int check_if_reynolds(int msl, int msr, int not_moving) {
- if(ABS(msl) + ABS(msr) < TOO_SLOW && n_flockmates == 0) {
-   not_moving += 1;
-    }
-  if(n_flockmates > 0) {
-   not_moving = 0;
-   no_reynolds = false;   
-     }
-  if(not_moving > STOPPED_THRESHOLD) {
-   not_moving = 0;
-   no_reynolds = true;
-    }
+   if( n_flockmates == 0) {
+       not_moving += 1;
+   }
+   if(n_flockmates > 0) {
+     not_moving = 0;
+     no_reynolds = false; 
+     max_speed_bmr = 700;
+     join_speed = 100;
+   }
+   if(not_moving > STOPPED_THRESHOLD) {
+     printf("ROBOT %d is in NO REYNOLDS MODE", robot_id);
+      not_moving = 0;
+      no_reynolds = true;
+      max_speed_bmr = 500;
+      join_speed = 300;
+   }
    return not_moving;
- }
+}
 // the main function
 int main(){
     int i;   						 // Loop counter
@@ -621,7 +616,7 @@ int main(){
    			 bmsr += e_puck_matrix[i] * distances[i];
    			 bmsl += e_puck_matrix[i+NB_SENSORS] * distances[i];
   		 }
-  		 normalize_speed(&bmsr, &bmsl, MAX_SPEED);
+  		 normalize_speed(&bmsr, &bmsl, max_speed_bmr);
     	}    
 
    	 // Send and get information
@@ -663,34 +658,24 @@ int main(){
 
    	 }
    	 if(JOIN) {
-            jmsl =  -migr_diff/2;
-            jmsr =   migr_diff/2;   	
+            jmsl =  -migr_diff/2 + 0.5;
+            jmsr =   migr_diff/2 + 0.5;   	
             if(VERBOSE_P && (ROBOT_DEBUG_A == robot_id || ROBOT_DEBUG_B == robot_id )) {printf("Migr_diff = %f JMSL = %d, JMSR = %d\n", migr_diff, jmsl, jmsr);} 
-   	   normalize_speed(&jmsr, &jmsl, JOIN_SPEED);
+   	   normalize_speed(&jmsr, &jmsl, join_speed);
    	 }   	 
    	 
    	 // Set final speed
    	 if(VERBOSE_5 && ROBOT_DEBUG == robot_id) {printf("count = %d\n reynold = %d\n", count, ABS(rmsl) + ABS(rmsr));} 
-   	 /*
-   	 if( count < 3 || (count < THRESHOLD_TIME_FLOCK_FORMATION && (ABS(rmsl) + ABS(rmsr) > FLOCK_STABLE))  ) {  //les valeurs sont trop instables pour pouvoir faire ce genre de condition
-     	  //if( count < THRESHOLD_TIME_FLOCK_FORMATION ) {
-     	        if(VERBOSE_P && ROBOT_DEBUG == robot_id) { printf("ONLY REYNOLDS\n"); }
-                 msl = rmsl;
-                 msr = rmsr;
-   	 } else { (REMETTRE } SI BESOIN)*/ 
    
-              //if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("ALL IS ON\n");}
+          //if(VERBOSE_P && ROBOT_DEBUG == robot_id) {printf("ALL IS ON\n");}
           if(VERBOSE_P && (ROBOT_DEBUG_A == robot_id || ROBOT_DEBUG_B == robot_id )) { printf("LEFT\n"); }
           msl = set_final_speed(bmsl,  rmsl,  mmsl, jmsl, max_sens);
           
           if(VERBOSE_P && (ROBOT_DEBUG_A == robot_id || ROBOT_DEBUG_B == robot_id )) { printf("RIGHT\n"); }
-          msr = set_final_speed(bmsr,  rmsr,  mmsr, jmsr, max_sens);
-         
-        
+          msr = set_final_speed(bmsr,  rmsr,  mmsr, jmsr, max_sens);        
    	 
    	 not_moving = check_if_reynolds(msl, msr, not_moving);
-   	 
-   	 
+ 	  
 
    	 if(VERBOSE_P && (ROBOT_DEBUG_A == robot_id || ROBOT_DEBUG_B == robot_id )) {
    	 //printf("-----------------------------------------------\n");
@@ -705,7 +690,6 @@ int main(){
             if(ROBOT_DEBUG == robot_id && VERBOSE_5){ printf("Diff [%f]\n", migr_diff); }
         
           if(n_flockmates == FLOCK_SIZE - 1)  {
-             //migr_diff = 0;
              if(VERBOSE_5 && ROBOT_DEBUG == robot_id) {printf("FLOCK FULL\n"); }
           }
 	 

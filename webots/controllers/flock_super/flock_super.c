@@ -45,7 +45,7 @@ double **data_glob;//Mathilde
 double **data_line;
 // good results ...
 
-double default_weight[5] = { 8.1, 7.5, 3.1, 0.01, 0.01 };
+double default_weight[5] = { 6, 5.2, 1.3, 0.01, 0.01 };
 
   
 
