@@ -30,7 +30,7 @@ typedef enum { false = 0, true = !false } bool;
 
 
 			/*To Change */
-static const int robot_id = 0;
+static const int robot_id = 2;
 static const int robot_group = 0;
 
 			/*Constantes*/
@@ -110,7 +110,7 @@ static bool flag_time_reading = true;
 static bool flag_time_sending = true;
 static bool flag_time_reset = true;
 static bool flag_verbose_timer = false;
-static bool flag_verbose_speed = true;
+static bool flag_verbose_speed = false;
 
 
 int getselector()
@@ -492,7 +492,7 @@ void epuck_receive_message(void){
 			read_buffer = false;
 		}
 	}
-	if(flag_verbose || flag_verbose_timer){
+	if(!flag_verbose || flag_verbose_timer){
 		int j;
 		int sum = 0;
 		for(j=0;j<FLOCK_SIZE;j++){sum +=flockmates[j];}
