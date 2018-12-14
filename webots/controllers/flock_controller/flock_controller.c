@@ -28,7 +28,7 @@
 #define MAX_SENS      	4096	// Maximum sensibility value
 //#define MAX_SPEED     	600 	// Maximum speed
 //#define JOIN_SPEED         200     // Speed added in join when join mode (retunrning to migr_diff = 0)
-
+#define JOIN_BIAS          0.5
 /*Webots 2018b*/
 #define MAX_SPEED_WEB 	6.28	// Maximum speed webots
 /*Webots 2018b*/
@@ -550,25 +550,25 @@ float set_final_speed(int b_speed, int r_speed, int m_speed, int j_speed, int ma
 }
 
 
-     //Condition pour moins faire reynolds si on avance pas
-int check_if_reynolds(int msl, int msr, int not_moving) {
+//Condition pour moins faire reynolds si on avance pas
+int check_if_reynolds(int msl, int msr, int alone) {
    if( n_flockmates == 0) {
-       not_moving += 1;
+       alone += 1;
    }
    if(n_flockmates > 0) {
-     not_moving = 0;
+     alone = 0;
      no_reynolds = false; 
      max_speed_bmr = 700;
      join_speed = 100;
    }
-   if(not_moving > STOPPED_THRESHOLD) {
+   if(alone > STOPPED_THRESHOLD) {
      printf("ROBOT %d is in NO REYNOLDS MODE", robot_id);
-      not_moving = 0;
+      alone = 0;
       no_reynolds = true;
       max_speed_bmr = 500;
       join_speed = 300;
    }
-   return not_moving;
+   return alone;
 }
 // the main function
 int main(){
@@ -581,7 +581,7 @@ int main(){
     float msl_w, msr_w;
     int distances[NB_SENSORS];   	 // Array for the distance sensor readings
     int max_sens;   				 // Store highest sensor value
-    int not_moving = 0;       	 
+    int alone = 0;       	 
     reset();   					 // Resetting the robot
 
     msl = 0; msr = 0;
@@ -659,8 +659,8 @@ int main(){
 
    	 }
    	 if(JOIN) {
-            jmsl =  -migr_diff/2 + 0.5;
-            jmsr =   migr_diff/2 + 0.5;   	
+            jmsl =  -migr_diff/2 + JOIN_BIAS;
+            jmsr =   migr_diff/2 + JOIN_BIAS;   	
             if(VERBOSE_P && (ROBOT_DEBUG_A == robot_id || ROBOT_DEBUG_B == robot_id )) {printf("Migr_diff = %f JMSL = %d, JMSR = %d\n", migr_diff, jmsl, jmsr);} 
    	   normalize_speed(&jmsr, &jmsl, join_speed);
    	 }   	 
@@ -675,7 +675,7 @@ int main(){
           if(VERBOSE_P && (ROBOT_DEBUG_A == robot_id || ROBOT_DEBUG_B == robot_id )) { printf("RIGHT\n"); }
           msr = set_final_speed(bmsr,  rmsr,  mmsr, jmsr, max_sens);        
    	 
-   	 not_moving = check_if_reynolds(msl, msr, not_moving);
+   	 alone = check_if_reynolds(msl, msr, alone);
  	  
 
    	 if(VERBOSE_P && (ROBOT_DEBUG_A == robot_id || ROBOT_DEBUG_B == robot_id )) {
