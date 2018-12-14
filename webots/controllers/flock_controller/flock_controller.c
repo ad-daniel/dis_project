@@ -49,7 +49,7 @@ float RULE2_THRESHOLD = 0.12;  	// Threshold to activate dispersion rule. defaul
 //float RULE2_WEIGHT	= 5.1; // Weight of dispersion rule. default 0.02/10
 
 //float RULE3_WEIGHT	= 0;  // Weight of consistency rule. default 1.0/10
-float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float weightY;
+float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float REYN_MIGR_RATIO;
 
 #define MIGRATORY_URGE 1    		   // Tells the robots if they should just go forward or move towards a specific migratory direction
 #define REYNOLDS 1
@@ -63,14 +63,16 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float weightX; float
 #define VERBOSE_3  	 0
 #define VERBOSE_4  	 0
 #define VERBOSE_5           0
-#define VERBOSE_P           1
-#define ROBOT_DEBUG  111      // which robot's information to filter out
+#define VERBOSE_P           0
+#define VERBOSE_M      0
+#define ROBOT_DEBUG  3      // which robot's information to filter out
+
 
 #define ROBOT_DEBUG_A 4
 #define ROBOT_DEBUG_B 111
 
 /*Added by Pauline for weights*/
-static float REYN_MIGR_RATIO =   	5.; // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
+float REYN_MIGR_RATIO =   	5.; // TO TUNE: ratio of weights between Reynolds and Migration urge  	 
 #define BRAITENBERG_LOWER_THRESH 350 // below this value, no avoidance
 #define BRAITENBERG_UPPER_THRESH 2000
 #define BRAITENBERG_SPEED_BIAS 300
@@ -169,15 +171,14 @@ static void reset()
 
 	while(wb_receiver_get_queue_length(receiver3) == 0){wb_robot_step(TIME_STEP);}
 
-	while(wb_receiver_get_queue_length(receiver3) > 0){ 
-	 inbuffer = (char*) wb_receiver_get_data(receiver3);
-	 //RULE1_WEIGHT = 0.1;RULE2_WEIGHT = 0.1;RULE3_WEIGHT = 1; weightX = (0.01/10); weightY = (0.01/10) ; 
-	 sscanf(inbuffer,"%f#%f##%f#%f#%f#%f#%f\n", &migr[0], &migr[1], &RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&weightX,&weightY);
-	 
-	 if(VERBOSE_4 && robot_id == ROBOT_DEBUG){ printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,weightX,weightY, migr[0], migr[1]); }
-	 //printf("initializing\n");
-	 wb_receiver_next_packet(receiver3);
-	}
+  while(wb_receiver_get_queue_length(receiver3) > 0){ 
+   inbuffer = (char*) wb_receiver_get_data(receiver3);
+   sscanf(inbuffer,"%f#%f##%f#%f#%f#%f\n", &migr[0], &migr[1], &RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&REYN_MIGR_RATIO);
+   
+   if(VERBOSE_M && robot_id == ROBOT_DEBUG){ printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,REYN_MIGR_RATIO, migr[0], migr[1]); }
+   //printf("initializing\n");
+   wb_receiver_next_packet(receiver3);
+  }
 
     REYN_MIGR_RATIO /= (robot_id+1.)*0.2; // Adding heterogenity (pseudo leader)
     printf("Reset robot [id: %d][group: %d] REY_MIGR_RATIO = %f\n",robot_id, robot_group,REYN_MIGR_RATIO);
