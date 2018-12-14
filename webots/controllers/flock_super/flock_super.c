@@ -37,8 +37,10 @@
 
 #if CROSSING == 1
   #define NB_ROBOTS  2*FLOCK_SIZE
+  char mapName[] = "CROSSING";
 #else
   #define NB_ROBOTS  FLOCK_SIZE
+  char mapName[] = "OBSTACLES";
 #endif
 
 WbNodeRef robs[NB_ROBOTS];   // Robots nodes
@@ -206,9 +208,9 @@ void test_param(FILE *params, FILE *line_to_read){
       for(j=init; j<=final; j += resol){
         for(k=init; k<=final; k += resol){
           //for(l=init; l<=final; l += resol){
-            weights[2] = i/10;
-            weights[1] = j/10;
-            weights[0] = k/10;
+            weights[2] = i;
+            weights[1] = j;
+            weights[0] = k;
             //RATIO = (l - init) / (final - init); // scale back to [0, 1] range
             fprintf(params, "%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2],RATIO);
             //if(VERBOSE_M){printf("%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2], RATIO);}
@@ -401,12 +403,13 @@ int main(int argc, char *args[]) {
   FILE *line_to_read = NULL; 
   int nb_repetition = 0; //find a way to count nb of simulation with the same parameters
   
+
   if(OPTIMIZE){ 
-    printf("OPTIMIZATION: ACTIVE\n");
+    printf("OPTIMIZATION: ACTIVE on map   >>>>>   %s   <<<<<\n", mapName);
     test_param(fparam, line_to_read);
   }
   else{
-    printf("OPTIMIZATION: INACTIVE\n");
+    printf("OPTIMIZATION: INACTIVE on map >>>>>   %s   <<<<<\n", mapName);
     send_default_params();
   }
     
@@ -444,7 +447,7 @@ int main(int argc, char *args[]) {
         if((t > T_MAX) || !f_safe_zone){
           printf("Exit condition\n");
                             
-
+          if(VERBOSE_M){ printf("Final performance: %f\n", performance_overall); } 
           if(data_line[0][0] <= data_glob[0][0]-1){
             data_line[0][0] += 1;
             printf("next line number is %f\n", data_line[0][0]);
