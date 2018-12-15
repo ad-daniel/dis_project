@@ -518,8 +518,8 @@ int main(){
 	 
 // Loop step 6 : JOIN
    	 if(JOIN) {
-		jmsl =  -migr_diff/2;
-		jmsr =   migr_diff/2;   	
+		jmsl =  -migr_diff/2+JOIN_BIAS;
+		jmsr =   migr_diff/2+JOIN_BIAS;   	
 		normalize_speed(&jmsr, &jmsl, JOIN_SPEED);
    	 }   	 
    	 
