@@ -1,0 +1,30 @@
+#! /bin/bash
+
+echo "Setting the PATH"
+
+# MODIFY THE FOLLOWING LINE to set the path to your e-puck directory (containing the development tree and the tools)
+export EPUCKBASEPATH=/home/USERNAME/PATH/TO/EPUCK/FOLDER/Epuck
+
+# Setting up paths
+export PATH=$EPUCKBASEPATH/Tools:$PATH
+export PATH=/net/icitnab1/vol/src/lin/distrib/swis/pic30-elf:/net/icitnab1/vol/src/lin/distrib/swis/pic30-elf/pic30-elf:$PATH
+
+echo "Done"
+
+# On the lab's virtual machine, the script used to hang here for 1 minute for an unknown reason, so prompt the user to be patient
+# In fact, if the script is stopped and then run again (once, sometimes twice), it finally works...
+echo "Compiling the e-puck library. Please be patient, it may sometimes appear to hang before making the library (~ 1 minute sometimes) and can take a while..."
+echo ""
+
+# Make sure the libraries are compiled
+make -C $EPUCKBASEPATH/EpuckDevelopmentTree/library
+
+# Colored shell
+export PS1="\[\e[34m\]\u@\h:\w> \[\e[0m\]"
+
+echo "Finished"
+
+# Use the bash terminal
+exec bash -l
+
+
