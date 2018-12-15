@@ -32,7 +32,7 @@
 #define VERBOSE_M   1
 
 #define CROSSING    1
-#define OPTIMIZE    1
+#define OPTIMIZE    0
 #define FLOCK_SIZE  5     // Number of robots in flock
 
 #if CROSSING == 1
@@ -63,7 +63,7 @@ double **data_line;
 
 double default_weight[5] = { 6, 5.2, 1.3, 0.01, 0.01 };
 
-float default_RATIO = 1.;
+float default_RATIO = 2.;
 
   
 

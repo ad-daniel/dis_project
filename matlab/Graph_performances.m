@@ -2,7 +2,8 @@ clc
 clear all 
 close all
 
-addpath("../webots/controllers/flock_super")
+%addpath("../webots/controllers/flock_super")
+addpath("../webots/Optimisation results/obstacles/ratio01_0")
 %addpath("..")
 
 Reynolds_perf = -1; errmsg = ''; 
@@ -14,40 +15,52 @@ nb_simul = 0;
 
 while Reynolds_perf < 0
     disp(errmsg); 
-    [Reynolds_perf, errmsg] = fopen('Reynolds_performance _ 09.12.csv', 'r'); 
-    performances = csvread('Reynolds_performance _ 09.12.csv');
-    [M,N]=size(performances); 
+    [Reynolds_perf, errmsg] = fopen('Reynolds_performance.csv', 'r'); 
+    performances = csvread('Reynolds_performance.csv');
+    [M,N]=size(performances);
+    
+    %Find line with 1 0 0 0 0 to know when a simulation starts
     nb_steps_per_simul = max(performances(:,1)); 
-    nb_simul = sum(performances(:,1)==nb_steps_per_simul); 
+    nb_simul = size( find(performances(:,3:6)==0) ,1) / nb_metrics;
+%     nb_steps_per_simul = max(performances(:,1)); 
+%     %when not same final number at the end of one simulation
+%     nb_repetitions = floor(size(performances,1) / nb_steps_per_simul);
+%     nb_simul = sum(performances(:,1)==nb_repetitions); 
 end
 
 perf_boxplot = zeros(nb_simul,1+nb_metrics*nb_steps_per_simul);
 
 nb_simul_real = 1; c = 1;
-syms k x; set_cumul = symsum(k,k,1,nb_steps_per_simul);    
+syms k x; set_cumul = symsum(k,k,1,nb_steps_per_simul);    count = 0; countB = 0; 
 
 %Reorganise data so it can realize the boxplot
-while(c<=M)
-    if(sum(performances(c:c+nb_steps_per_simul -1, 1))==set_cumul && performances(c,1) == 1)
-        perf_boxplot(nb_simul_real,:)=[performances(c,1), performances(c:c+nb_steps_per_simul -1, 3)'...
-                                performances(c:c+nb_steps_per_simul -1, 4)'...
-                                performances(c:c+nb_steps_per_simul -1, 5)'...
-                                performances(c:c+nb_steps_per_simul -1, 6)'];
-        c = c + nb_steps_per_simul;
-        nb_simul_real = nb_simul_real + 1; 
-      else
-        %fprintf('not enough steps for a simulation at line %d\n', c);
+while(c<M)
+    if(c+nb_steps_per_simul -1 > M)
+        cf = M; 
+    else
+        cf = c+nb_steps_per_simul -1;
+    end
+        
+    if(sum(performances(c:cf, 1))==set_cumul && performances(c,1) == 1)
+        perf_boxplot(nb_simul_real,:)=[performances(c,1), performances(c:cf, 3)'...
+                                performances(c:cf, 4)'...
+                                performances(c:cf, 5)'...
+                                performances(c:cf, 6)'];
+        %c = c + nb_steps_per_simul;
+        c = cf+1; 
+        nb_simul_real = nb_simul_real + 1; countB = countB+1; 
+    else
         k = 1;
-        while(performances(c+k,1)~=1 && k<nb_steps_per_simul)
+        while((c+k < M) && performances(c+k,1)~=1 && k<nb_steps_per_simul)
             k = k+1;
         end
+        
         if(k>nb_steps_per_simul-1)
-            fprintf('2 lines will be problematic\n');
-            fprintf('line %d, simul n° %d\n', c, nb_simul_real);
+            fprintf('2 lines will be problematic : line %d, simul n° %d\n', c, nb_simul_real);
         end
-        %nb_lines_to_jump = k
         perf_boxplot(nb_simul_real,:) = [performances(c,1), zeros(1, nb_metrics*nb_steps_per_simul)]; 
         nb_simul_real = nb_simul_real + 1; 
+        count = count +1;
         c = c+k; 
     end
 end
@@ -90,7 +103,6 @@ for(j=1:2)
     for(i=1:4)
         subplot(2,4,ns);
         c = nb_steps_per_simul * (i-1) + 1; 
-        %g = sprintf("Sim%d",I_mean(1), "Sim%d",I_mean(2), "Sim%d",I_mean(3), "Sim%d",I_mean(4)];
         boxplot(best_perf_boxplot(:,c:c+nb_steps_per_simul -1,j)');
         
         if(j==1) 
@@ -98,7 +110,6 @@ for(j=1:2)
         elseif(j==2)
             xticklabels({'801','208','108','104'});
         end
-        %title(['Subplot' data_label(i+2)]);
         xlabel('Simulation n°');    ylabel('Performance');
         title({data_label(i+2)},'FontSize', 20);
         xt = get(gca, 'XTick'); set(gca, 'FontSize', 19)

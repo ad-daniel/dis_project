@@ -181,7 +181,7 @@ static void reset()
    wb_receiver_next_packet(receiver3);
   }
 
-    REYN_MIGR_RATIO /= (robot_id+1.)*0.2; // Adding heterogenity (pseudo leader)
+    REYN_MIGR_RATIO += (robot_id+1.)*0.4; // Adding heterogenity (pseudo leader)
     if(VERBOSE_4){printf("Reset robot [id: %d][group: %d] REY_MIGR_RATIO = %f\n",robot_id, robot_group,REYN_MIGR_RATIO);}
     if(VERBOSE_4 && robot_id == ROBOT_DEBUG){printf("Reset robot %d :: [id: %d][group: %d]\n",robot_id_u, robot_id, robot_group);}
     //printf("Reset done\n");
