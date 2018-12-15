@@ -1,3 +1,0 @@
-
-void wait(long num);
-
