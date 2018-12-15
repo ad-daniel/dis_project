@@ -142,7 +142,7 @@ void handle_line_csv(FILE *line_to_read, int action, double line, double **data_
 void test_param(FILE *params, FILE *line_to_read){                              
   /*Create the .cvs file to test differents parameters, and upload it at every new reload*/
   float WEIGHT1 = 0.7; float WEIGHT2 = (0.02/10); float WEIGHT3 = (1.0/10); 
-  float RATIO = 1.0; 
+  float RATIO = 2.0; 
   float weights[4] = {WEIGHT1, WEIGHT2, WEIGHT3, RATIO};
   int line = 1; 
   
@@ -320,12 +320,12 @@ void compute_performance (float* fit_o, float* fit_c, float * fit_v, int offset)
       speed[1] = avg_loc[1] - avg_loc_old_G1[1];      
 
       //printf("[%d]   [%f --> %f][%f --> %f]  == [%f][%f]\n", offset, avg_loc_old_G1[0], avg_loc[0], avg_loc_old_G1[1], avg_loc[1], speed[0], speed[1]);
+      // adapt migration for crossing scenario ( -1.0 for the group going leftward)
+      projection = (speed[0]*(-migrx) + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
 
       // update location info for next timestep
       avg_loc_old_G1[0] = avg_loc[0];
       avg_loc_old_G1[1] = avg_loc[1];      
-      // adapt migration for crossing scenario ( -1.0 for the group going leftward)
-      projection = (speed[0]*(-migrx) + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
     }
     else{
       // average displacement velocity along direction of migratory urge
@@ -333,13 +333,13 @@ void compute_performance (float* fit_o, float* fit_c, float * fit_v, int offset)
       speed[1] = avg_loc[1] - avg_loc_old_G2[1];  
 
       //printf("[%d]   [%f --> %f][%f --> %f]  == [%f][%f]\n", offset, avg_loc_old_G2[0], avg_loc[0], avg_loc_old_G2[1], avg_loc[1], speed[0], speed[1]);
+      projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
 
       // update location info for next timestep
       avg_loc_old_G2[0] = avg_loc[0];
       avg_loc_old_G2[1] = avg_loc[1]; 
     }
 
-    projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
   }
   else{
     // average displacement velocity along direction of migratory urge
