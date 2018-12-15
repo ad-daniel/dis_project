@@ -35,7 +35,7 @@ if(SCENARIO == OBSTACLES):
 	path += '/obstacles'
 if(SCENARIO == CROSSING):
 	path += '/crossing'
-path = path + '/run0' + RATIO + '/Reynolds_performance.csv'
+path = path + '/ratio0' + RATIO + '/Reynolds_performance.csv'
 
 
 
