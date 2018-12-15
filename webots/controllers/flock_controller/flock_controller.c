@@ -141,7 +141,8 @@ static void reset() {
        wb_receiver_next_packet(receiver3);
     }
 // Set the reynold to migration ratio according to the robot id
-    REYN_MIGR_RATIO /= (robot_id+1.)*0.2; // Adding heterogenity (pseudo leader based)
+    REYN_MIGR_RATIO += (robot_id+1.)*0.4; // Adding heterogenity (pseudo leader based)
+
 }
 
 void update_self_motion(int msl, int msr) {
