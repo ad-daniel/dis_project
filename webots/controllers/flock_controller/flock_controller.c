@@ -26,7 +26,7 @@
 #define NB_SENSORS    	8   	// Number of distance sensors
 #define MIN_SENS      	350 	// Minimum sensibility value
 #define MAX_SENS      	4096	// Maximum sensibility value
-#define MAX_SPEED     	700 	// Maximum speed
+#define MAX_SPEED_BMR     	700 	// Maximum speed
 #define JOIN_SPEED    100        // Speed added in join when join mode (returning to migr_diff = 0)
 #define NO_REYN_BIAS 200      // Difference in saturation speed if robot is alone
 #define JOIN_BIAS      0.5
@@ -61,8 +61,8 @@ int e_puck_matrix[16] =   {16,9,6,3, -1,-5,-6,-8,   -12,-8,-5,6, 2,4,5,9}; // fo
 
 // 
 #define MAX_TIME_ALONE 10     // Nomber maximum of step alone, then deactivate reynold
-int join_speed = 100;         // Speed allocated for the join mode
-int max_speed_bmr = 700;      // Speed allocated for the braitenberg + migration + reynold mode
+int join_speed = JOIN_SPEED;         // Speed allocated for the join mode
+int max_speed_bmr = MAX_SPEED_BMR;      // Speed allocated for the braitenberg + migration + reynold mode
 
 /*Webots 2018b*/
 WbDeviceTag left_motor;     // Handle for left wheel of the robot
@@ -430,7 +430,7 @@ int check_if_alone(int msl, int msr, int alone) {
    if(alone > MAX_TIME_ALONE) {
       alone = 0;
       no_reynolds = true;   // Set no_reynold flag (Reynold will be ignored)
-      max_speed_bmr = MAX_SPEED - NO_REYN_BIAS;  // Decrease speed of Braitenberg and Migration
+      max_speed_bmr = MAX_SPEED_BMR - NO_REYN_BIAS;  // Decrease speed of Braitenberg and Migration
       join_speed = JOIN_SPEED + NO_REYN_BIAS;     // Increase speed of Join 
    }
    
@@ -438,7 +438,7 @@ int check_if_alone(int msl, int msr, int alone) {
    if(n_flockmates > 0) {
      alone = 0;
      no_reynolds = false; 
-     max_speed_bmr = MAX_SPEED;
+     max_speed_bmr = MAX_SPEED_BMR;
      join_speed = JOIN_SPEED;
    }
    
