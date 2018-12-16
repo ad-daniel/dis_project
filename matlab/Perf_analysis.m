@@ -49,15 +49,25 @@ figure;
 ns = 1; 
 for(i=1:nb_scenarios)
     for(j=1:nb_metrics)
-        bx1 = performances_obst(lines_obst(I_sum(1),1) +1:lines_obst(I_sum(1),2), 2+j); %+1 to remove start line
-        bx2 = performances_obst(lines_obst(I_sum(2),1) +1:lines_obst(I_sum(2),2), 2+j); 
-        bx3 = performances_obst(lines_obst(I_sum(3),1) +1:lines_obst(I_sum(3),2), 2+j); 
-        bx4 = performances_obst(lines_obst(I_sum(4),1) +1:lines_obst(I_sum(4),2), 2+j); 
-        bx5 = performances_obst(lines_obst(I_sum(5),1) +1:lines_obst(I_sum(5),2), 2+j); 
-        bx=[bx1; bx2; bx3; bx4; bx5]; 
-        bg = [zeros(length(bx1), 1); ones(length(bx2), 1); ...
-            2*ones(length(bx3), 1); 3*ones(length(bx4),1); 4*ones(length(bx5),1)];
-
+        if(i==1)
+            bx1 = performances_obst(lines_obst(I_sum(1),1) +1:lines_obst(I_sum(1),2), 2+j); %+1 to remove start line
+            bx2 = performances_obst(lines_obst(I_sum(2),1) +1:lines_obst(I_sum(2),2), 2+j); 
+            bx3 = performances_obst(lines_obst(I_sum(3),1) +1:lines_obst(I_sum(3),2), 2+j); 
+            bx4 = performances_obst(lines_obst(I_sum(4),1) +1:lines_obst(I_sum(4),2), 2+j); 
+            bx5 = performances_obst(lines_obst(I_sum(5),1) +1:lines_obst(I_sum(5),2), 2+j); 
+            bx=[bx1; bx2; bx3; bx4; bx5]; 
+            bg = [zeros(length(bx1), 1); ones(length(bx2), 1); ...
+                2*ones(length(bx3), 1); 3*ones(length(bx4),1); 4*ones(length(bx5),1)];
+        else
+            bx1 = performances_cross(lines_cross(I_sum(1),1) +1:lines_cross(I_sum(1),2), 2+j); %+1 to remove start line
+            bx2 = performances_cross(lines_cross(I_sum(2),1) +1:lines_cross(I_sum(2),2), 2+j); 
+            bx3 = performances_cross(lines_cross(I_sum(3),1) +1:lines_cross(I_sum(3),2), 2+j); 
+            bx4 = performances_cross(lines_cross(I_sum(4),1) +1:lines_cross(I_sum(4),2), 2+j); 
+            bx5 = performances_cross(lines_cross(I_sum(5),1) +1:lines_cross(I_sum(5),2), 2+j); 
+            bx=[bx1; bx2; bx3; bx4; bx5]; 
+            bg = [zeros(length(bx1), 1); ones(length(bx2), 1); ...
+                2*ones(length(bx3), 1); 3*ones(length(bx4),1); 4*ones(length(bx5),1)];
+        end
         subplot(2,4,ns);
         boxplot(bx, bg);
         xticklabels({'367','967','376','200', '826'});
@@ -69,7 +79,7 @@ for(i=1:nb_scenarios)
 	end
 end
 
-
+%Plot best result performance for both simulations
 for(i=1:nb_metrics)
     p_obst(:,i) = performances_obst(lines_obst(I_sum(1),1) +1:lines_obst(I_sum(1),2), 2+i);
     p_cross(:,i) = performances_cross(lines_cross(I_sum(1),1) +1:lines_cross(I_sum(1),2), 2+i);
