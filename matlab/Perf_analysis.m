@@ -1,164 +1,89 @@
-clc
-clear all 
-close all
+%%
+%............Matlab optimisation program, to find the set of parameters
+%optimising both of the scenarios (crossing and obstacle world).........%
+%%
+clc; clear all; close all
 
-addpath("../webots/controllers/flock_super")
-%addpath("ratio02_0")
-%addpath("..")
-
-Reynolds_perf = -1; errmsg = ''; 
+plot = 0; print = 0; nb_scenarios = 2; nb_metrics = 4;    
 data_label = ["nb_simul","time","orientation","cohesion","velocity",...
             "performance"];
-nb_metrics = 4;     %TO DO : change so it takes it directly from performances
-nb_steps_per_simul = 0; 
-nb_simul = 0; 
-
-while Reynolds_perf < 0
+%%
+%......................Read the performance csv files ....................%
+%%
+addpath("crossing/ratio01_5"); 
+Reynolds_cross = -1; errmsg = ''; 
+while Reynolds_cross < 0
     disp(errmsg); 
-    [Reynolds_perf, errmsg] = fopen('Reynolds_performance.csv', 'r'); 
-    performances = csvread('Reynolds_performance.csv');
-    [M,N]=size(performances);
-    
-    %Find line with 1 0 0 0 0 to know when a simulation starts
-    nb_steps_per_simul = max(performances(:,1)); 
-    nb_max_steps = nb_steps_per_simul; 
-    nb_simul = size( find(performances(:,3)==0.0000) ,1);
+    [Reynolds_cross, errmsg] = fopen('Reynolds_performance_cross.csv', 'r'); 
+    performances_cross = csvread('Reynolds_performance_cross.csv');
 end
+fclose('all');
 
-
-nb_simul_real = 1; c = 1;
-syms k x; set_cumul = symsum(k,k,1,nb_steps_per_simul);    count = 0; countB = 0; 
-
-comp_mean = zeros(nb_simul, nb_metrics + 2); 
-comp_std = zeros(nb_simul, nb_metrics + 2); 
-
-%Reorganise data so it can realize the boxplot
-while(c<M)
-    if(performances(c,1) == 1)
-        nb_line = 1; 
-        while((performances(c+nb_line) ~= 1) && (nb_line < nb_max_steps))
-            nb_line = nb_line + 1 ; 
-        end
-        
-       if(c + nb_line -1 <= M)
-           cf = c + nb_line -1 ;
-       else
-           cf = M; 
-       end
-    elseif(performances(c,1) ~= 1)
-        cf = c; 
-            while(performances(cf,1) ~= 1 && (cf<M))
-                cf = cf + 1; 
-            end
-        if(cf>=M)
-            cf = M; 
-        end
-        
-        cf = cf-1;
-    end
-    
-    comp_mean(nb_simul_real, 1:2) = [c, cf];
-    comp_std(nb_simul_real, 1:2) = [c, cf];
-        
-    for(i=1:nb_metrics)
-        comp_mean(nb_simul_real, 2+i) = mean(performances(c:cf,2+i));
-        comp_std(nb_simul_real, 2+i) = std(performances(c:cf,2+i), 0,1);
-    end
-    
-    c = cf +1;
-    nb_simul_real = nb_simul_real + 1; 
+addpath("obstacles/ratio01_5");
+Reynolds_obst = -1; errmsg = ''; 
+while Reynolds_obst < 0
+    disp(errmsg); 
+    [Reynolds_obst, errmsg] = fopen('Reynolds_performance_obst.csv', 'r'); 
+    performances_obst = csvread('Reynolds_performance_obst.csv');
 end
+fclose('all');
 
-nb_simul_real = nb_simul_real -1;
-[best_mean_value, I_mean] = max(comp_mean(:,3:end),[],1);
 
 %%
-%............Best mean value of orientation, cohesion and velocity........%
+%..............Compare for both scenarios in the same time................% 
 %%
-comp_std_nonzero = comp_std; 
-k = find(comp_std == 0); 
-comp_std_nonzero(k) = 2; 
+[cross_sum, lines_cross] = analyse(performances_cross, data_label,nb_metrics, plot, print); 
+[obst_sum, lines_obst] = analyse(performances_obst, data_label,nb_metrics, plot, print); 
 
-[best_std, I_std] = min(comp_std_nonzero(:, 3:end),[],1);
-%best_perf_boxplot = zeros(nb_metrics,nb_metrics*nb_steps_per_simul, 2);
-
-
-for(i=1:4)
-    fprintf("Best mean value for %s is simulation %d and smallest std is simulation %d\n",...
-    data_label(i+2), I_mean(i), I_std(i));
-end
-
-for(j=1:4)
-    start(j,:) = [comp_mean(I_mean(j),1), comp_std(I_std(j),1)];
-    stop(j,:) = [comp_mean(I_mean(j),2), comp_std(I_std(j),2)];
-end
-
-%%
-%..........Best compromise between orientation, cohesion and velocity ......%
-%Normalization of the mean value, so compromised_mean between 0 to 3, as
-%sum of 3 normalized metrics.
-%%
-%Plot the box plot related to the best performances obtained
-figure;
-ns=1;
-for(j=1:2)
-    for(i=1:4)
-        subplot(2,4,ns);
-        %start at line + 1 to avoid 0 of the start line
-        x1 = performances(start(1,j)+1:stop(1,j), 2+i);
-        x2 = performances(start(2,j)+1:stop(2,j), 2+i);
-        x3 = performances(start(3,j)+1:stop(3,j), 2+i);
-        x4 = performances(start(4,j)+1:stop(4,j), 2+i);
-        x=[x1; x2; x3; x4]; 
-        g = [zeros(length(x1), 1); ones(length(x2), 1); ...
-            2*ones(length(x3), 1); 3*ones(length(x4),1)];
-        boxplot(x, g);
-        
-        if(j==1) 
-            xticklabels({'15','15','15','15'});
-        elseif(j==2)
-            xticklabels({'15','15','1','4'});
-        end
-        xlabel('Simulation n°');    ylabel('Performance');
-        title({data_label(i+2)},'FontSize', 20);
-        xt = get(gca, 'XTick'); set(gca, 'FontSize', 19)
-        yt = get(gcb, 'YTick'); set(gcb, 'FontSize', 19)
-        ns = ns+1; 
-    end
-end
-sgtitle('Boxplots of the best performances for our metrics, during the time of simulation');
-
+%Sum both scenarios results for instant performance sun
+combine = cross_sum + obst_sum;
 
 nb_compr = 5;
-compromise_mean = sum(comp_mean(:,3:5) ./ best_mean_value(1:3),2); %only take orient, cohesion, velocity
-[compr_mean_sorted, I_sorted] = sort(compromise_mean, 'descend'); 
-best_compromise_mean = [compr_mean_sorted(1:nb_compr,1), I_sorted(1:nb_compr,1)]; 
-
-fprintf("\n Best compromise means are : \n");
-for(j=1:nb_compr)
-    bstart(j,1) = [comp_mean(I_sorted(j),1)];
-    bstop(j,1) = [comp_mean(I_sorted(j),2)];
-    fprintf("%d for simulation %d \n",best_compromise_mean(j), I_sorted(j));
+[highest_sum, I_sum] = sort(combine, 'descend'); 
+fprintf("Highest sum of instant performance combining both scenarios are : \n")
+for(i=1:nb_compr)
+    fprintf("%d for simulation %d \n",highest_sum(i,1), I_sum(i));
 end
 
 figure; 
-for(i=1:4)
-    subplot(1,4,i);
-    bx1 = performances(bstart(1,1)+1:bstop(1,1), 2+i);
-    bx2 = performances(bstart(2,1)+1:bstop(2,1), 2+i);
-    bx3 = performances(bstart(3,1)+1:bstop(3,1), 2+i);
-    bx4 = performances(bstart(4,1)+1:bstop(4,1), 2+i);
-    bx5 = performances(bstart(5,1)+1:bstop(5,1), 2+i);
-    bx=[bx1; bx2; bx3; bx4; bx5]; 
-    bg = [zeros(length(bx1), 1); ones(length(bx2), 1); ...
-        2*ones(length(bx3), 1); 3*ones(length(bx4),1); 4*ones(length(bx5),1)];
-    boxplot(bx, bg);
-    xticklabels({'15','10','11','21', '2'});
-    xlabel('Simulation n°');    ylabel('Performance');
-    title({data_label(i+2)},'FontSize', 20);
-    xt = get(gca, 'XTick'); set(gca, 'FontSize', 16)
-    yt = get(gcb, 'YTick'); set(gcb, 'FontSize', 19)
+ns = 1; 
+for(i=1:nb_scenarios)
+    for(j=1:nb_metrics)
+        bx1 = performances_obst(lines_obst(I_sum(1),1) +1:lines_obst(I_sum(1),2), 2+j); %+1 to remove start line
+        bx2 = performances_obst(lines_obst(I_sum(2),1) +1:lines_obst(I_sum(2),2), 2+j); 
+        bx3 = performances_obst(lines_obst(I_sum(3),1) +1:lines_obst(I_sum(3),2), 2+j); 
+        bx4 = performances_obst(lines_obst(I_sum(4),1) +1:lines_obst(I_sum(4),2), 2+j); 
+        bx5 = performances_obst(lines_obst(I_sum(5),1) +1:lines_obst(I_sum(5),2), 2+j); 
+        bx=[bx1; bx2; bx3; bx4; bx5]; 
+        bg = [zeros(length(bx1), 1); ones(length(bx2), 1); ...
+            2*ones(length(bx3), 1); 3*ones(length(bx4),1); 4*ones(length(bx5),1)];
+
+        subplot(2,4,ns);
+        boxplot(bx, bg);
+        xticklabels({'367','967','376','200', '826'});
+        xlabel('Simulation n°');    ylabel('Performance');
+        title({data_label(j+2)},'FontSize', 20);
+        xt = get(gca, 'XTick'); set(gca, 'FontSize', 16);
+        yt = get(gcb, 'YTick'); set(gcb, 'FontSize', 19);
+        ns = ns+1; 
+	end
 end
-%sgtitle('Boxplots of the best COMPROMISES performances for our metrics, during the time of simulation'); 
-%%
+
+
+for(i=1:nb_metrics)
+    p_obst(:,i) = performances_obst(lines_obst(I_sum(1),1) +1:lines_obst(I_sum(1),2), 2+i);
+    p_cross(:,i) = performances_cross(lines_cross(I_sum(1),1) +1:lines_cross(I_sum(1),2), 2+i);
+end
+figure; 
+boxplot(p_obst);
+xticklabels({"orientation","cohesion","velocity", "performance"});
+xlabel('Metrics','FontSize', 20); ylabel('Performances','FontSize', 20);
+title('Bests parameters performance for Obstacle','FontSize', 20);
+
+figure; 
+boxplot(p_cross);
+xticklabels({"orientation","cohesion","velocity", "performance"});
+xlabel('Metrics','FontSize', 20); ylabel('Performances','FontSize', 20);
+title('Bests parameters performance for Crossing','FontSize', 20);
+
 fclose('all');
