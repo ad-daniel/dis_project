@@ -1,12 +1,12 @@
-/*****************************************************************************/
-/* File:     	flock_controller.c                                      */
-/* Version:  	1.0                                                     */
-/* Date:     	15-Dec-18                                               */
-/* Description:  Reynolds flocking with relative local positions obtain via   */
-/*               Ir comunication. This code is inspired from Reynolds.c of the Lab 4   	  	                      */
-/*                                                                       	*/
-/* Author:      Group 10 : DIS mini-Project  			*/
-/*****************************************************************************/
+/*****************************************************************************************************/
+/* File:     	flock_controller.c                                                             */
+/* Version:  	1.0                                                                            */
+/* Date:     	15-Dec-18                                                                      */
+/* Description:  Reynolds flocking with relative local positions obtain via                          */
+/*               Ir comunication. This code is inspired from Reynolds.c of the Lab 4                 */
+/*                                                                       	                       */
+/* Author:      Group 10 : DIS mini-Project  			                       */
+/****************************************************************************************************/
 
 #include <stdio.h>
 #include <math.h>
@@ -24,21 +24,18 @@
 //-------------------------------------------------------------------------------------------------//
 
 #define NB_SENSORS    	8   	// Number of distance sensors
-#define MIN_SENS      	350 	// Minimum sensibility value
-#define MAX_SENS      	4096	// Maximum sensibility value
-#define MAX_SPEED_BMR     	700 	// Maximum speed
-#define JOIN_SPEED    100        // Speed added in join when join mode (returning to migr_diff = 0)
-#define NO_REYN_BIAS 200      // Difference in saturation speed if robot is alone
-#define JOIN_BIAS      0.5
-#define FLOCK_SIZE     5   	// Size of flock
+#define MAX_SPEED_BMR 700 	// Maximum speed
+#define JOIN_SPEED    100        // Speed added in join when join mode
+#define NO_REYN_BIAS  200        // Difference in saturation speed if robot is alone
+#define FLOCK_SIZE     5   	// Size of the flock
 
-#define TIME_STEP             64        // [ms] Duration of a time step
-#define AXLE_LENGTH            0.052    // Distance between wheels of robot (meters)
-#define SPEED_UNIT_RADS        0.00628  // Conversion factor from speed unit to radian per second
-#define WHEEL_RADIUS           0.0205   // Wheel radius (meters)
-#define DELTA_T   	         0.064    // Timestep (seconds)
-#define MAX_SPEED_WEB 	         6.28     // Maximum speed webots
-#define MAX_COMMUNICATION_DIST 0.25     // Maximum communication range (meters)
+#define TIME_STEP              64        // Duration of a time step in [ms] 
+#define AXLE_LENGTH            0.052     // Distance between wheels of robot (meters)
+#define SPEED_UNIT_RADS        0.00628   // Conversion factor from speed unit to radian per second
+#define WHEEL_RADIUS           0.0205    // Wheel radius (meters)
+#define DELTA_T   	         0.064     // Timestep (seconds)
+#define MAX_SPEED_WEB 	         6.28      // Maximum speed webots
+#define MAX_COMMUNICATION_DIST 0.25      // Maximum communication range (meters)
 // Flags for the different part of the controller
 #define MIGRATORY_URGE 1   // Tells the robots if they should just go forward or move towards a specific migratory direction
 #define REYNOLDS 1         // Tells the robots to use the 3 Reynolds rules for forming a flock
@@ -59,10 +56,9 @@ float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float REYN_MIGR_RATI
 #define BRAITENBERG_UPPER_THRESH 2000 // Normalisation factor
 int e_puck_matrix[16] =   {16,9,6,3, -1,-5,-6,-8,   -12,-8,-5,6, 2,4,5,9}; // for obstacle avoidance giving more weigth (asymetry) for the right side
 
-// 
-#define MAX_TIME_ALONE 10     // Nomber maximum of step alone, then deactivate reynold
-int join_speed = JOIN_SPEED;         // Speed allocated for the join mode
-int max_speed_bmr = MAX_SPEED_BMR;      // Speed allocated for the braitenberg + migration + reynold mode
+#define MAX_TIME_ALONE           10            // Maximum number of step alone, then deactivate reynold
+int join_speed = JOIN_SPEED;                   // Speed allocated for the join mode
+int max_speed_bmr = MAX_SPEED_BMR;             // Speed allocated for the braitenberg + migration + reynold mode
 
 /*Webots 2018b*/
 WbDeviceTag left_motor;     // Handle for left wheel of the robot
@@ -90,7 +86,6 @@ float relative_speed[FLOCK_SIZE][2];         // Speeds calculated with Reynold's
 bool flockmates[FLOCK_SIZE] = {0};           // Table of flag: 1- is flockmate ; 0- is not flockmate
 int n_flockmates = 0;                        // Number of flockmate
 bool no_reynolds = 0;                        // flag to deactivate reynolds: 1- reynold deactivated ; 0- reynold activated
-float migr_diff = 0;                         // Integrator of the wheels difference during the obstacle avoidance state
 float migr[2];                               // Migration Urge vector
 
 //-------------------------------------------------------------------------------------------------//
@@ -491,8 +486,8 @@ int main(){
    		 /* Braitenberg */
    		 for(int i=0;i<NB_SENSORS;i++)
    		 {
-   			 distances[i] = wb_distance_sensor_get_value(ds[i]); 			//Read sensor values
-   			 sum_sensors += distances[i]; 									// Add up sensor values
+   			 distances[i] = wb_distance_sensor_get_value(ds[i]); //Read sensor values
+   			 sum_sensors += distances[i]; // Add up sensor values
    			 max_sens = (max_sens > distances[i] ? max_sens : distances[i]); 	// Check if new highest sensor value
 			 
    			 // Weighted sum of distance sensor values for Braitenburg vehicle
@@ -552,10 +547,7 @@ int main(){
    	 wb_motor_set_velocity(right_motor, msr_w);
 	
 // Loop step 9 : UPDATE ROBOT STATES	
-   	 update_self_motion(msl,msr); 			// Update the robot states according to the odometry
-	
-	 migr_diff += msl - msr;				// Update the difference of velocity between the wheels
-
+   	 update_self_motion(msl,msr); // Update the robot states according to the odometry
 // Next simulation step
    	 wb_robot_step(TIME_STEP);
    	 
