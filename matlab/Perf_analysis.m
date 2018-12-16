@@ -2,8 +2,8 @@ clc
 clear all 
 close all
 
-%addpath("../webots/controllers/flock_super")
-addpath("../webots/Optimisation results/obstacles/ratio01_0")
+addpath("../webots/controllers/flock_super")
+%addpath("ratio02_0")
 %addpath("..")
 
 Reynolds_perf = -1; errmsg = ''; 
@@ -15,18 +15,14 @@ nb_simul = 0;
 
 while Reynolds_perf < 0
     disp(errmsg); 
-    [Reynolds_perf, errmsg] = fopen('Reynolds_performance.csv', 'r'); 
-    performances = csvread('Reynolds_performance.csv');
+    [Reynolds_perf, errmsg] = fopen('Reynolds_performance Ratio [5.000,1.000,40.000].csv', 'r'); 
+    performances = csvread('Reynolds_performance Ratio [5.000,1.000,40.000].csv');
     [M,N]=size(performances);
     
     %Find line with 1 0 0 0 0 to know when a simulation starts
     nb_steps_per_simul = max(performances(:,1)); 
     nb_max_steps = nb_steps_per_simul; 
-    nb_simul = size( find(performances(:,3:6)==0) ,1) / nb_metrics;
-%     nb_steps_per_simul = max(performances(:,1)); 
-%     %when not same final number at the end of one simulation
-%     nb_repetitions = floor(size(performances,1) / nb_steps_per_simul);
-%     nb_simul = sum(performances(:,1)==nb_repetitions); 
+    nb_simul = size( find(performances(:,3)==0.0000) ,1);
 end
 
 
@@ -38,36 +34,39 @@ comp_std = zeros(nb_simul, nb_metrics + 2);
 
 %Reorganise data so it can realize the boxplot
 while(c<M)
-%     if(c+nb_steps_per_simul -1 > M)
-%         cf = M; 
-%     else
-%         cf = c+nb_steps_per_simul -1;
-%     end
-    
     if(performances(c,1) == 1)
         nb_line = 1; 
         while((performances(c+nb_line) ~= 1) && (nb_line < nb_max_steps))
             nb_line = nb_line + 1 ; 
         end
-                       
-       %TO DO : add condition if start line is missing
         
        if(c + nb_line -1 <= M)
            cf = c + nb_line -1 ;
        else
            cf = M; 
        end
-           
-        comp_mean(nb_simul_real, 1:2) = [c, cf]; 
-        comp_std(nb_simul_real, 1:2) = [c, cf];
+    elseif(performances(c,1) ~= 1)
+        cf = c; 
+            while(performances(cf,1) ~= 1 && (cf<M))
+                cf = cf + 1; 
+            end
+        if(cf>=M)
+            cf = M; 
+        end
         
-        for(i=1:nb_metrics)
-            comp_mean(nb_simul_real, 2+i) = mean(performances(c:cf,2+i));
-            comp_std(nb_simul_real, 2+i) = std(performances(c:cf,2+i), 0,1);
-        end     
-       c = cf +1; 
-       nb_simul_real = nb_simul_real + 1; 
+        cf = cf-1;
     end
+    
+    comp_mean(nb_simul_real, 1:2) = [c, cf];
+    comp_std(nb_simul_real, 1:2) = [c, cf];
+        
+    for(i=1:nb_metrics)
+        comp_mean(nb_simul_real, 2+i) = mean(performances(c:cf,2+i));
+        comp_std(nb_simul_real, 2+i) = std(performances(c:cf,2+i), 0,1);
+    end
+    
+    c = cf +1;
+    nb_simul_real = nb_simul_real + 1; 
 end
 
 nb_simul_real = nb_simul_real -1;
@@ -116,9 +115,9 @@ for(j=1:2)
         boxplot(x, g);
         
         if(j==1) 
-            xticklabels({'902','206','709','902'});
+            xticklabels({'23','3','895','895'});
         elseif(j==2)
-            xticklabels({'801','208','108','104'});
+            xticklabels({'23','55','11','1'});
         end
         xlabel('Simulation n°');    ylabel('Performance');
         title({data_label(i+2)},'FontSize', 20);
@@ -154,9 +153,10 @@ for(i=1:4)
     bg = [zeros(length(bx1), 1); ones(length(bx2), 1); ...
         2*ones(length(bx3), 1); 3*ones(length(bx4),1); 4*ones(length(bx5),1)];
     boxplot(bx, bg);
+    xticklabels({'895','860','987','400', '890'});
     xlabel('Simulation n°');    ylabel('Performance');
     title({data_label(i+2)},'FontSize', 20);
-    xt = get(gca, 'XTick'); set(gca, 'FontSize', 19)
+    xt = get(gca, 'XTick'); set(gca, 'FontSize', 16)
     yt = get(gcb, 'YTick'); set(gcb, 'FontSize', 19)
 end
 %sgtitle('Boxplots of the best COMPROMISES performances for our metrics, during the time of simulation'); 

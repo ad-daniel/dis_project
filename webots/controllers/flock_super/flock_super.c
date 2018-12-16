@@ -31,7 +31,7 @@
 
 #define VERBOSE_M   1
 
-#define CROSSING    1
+#define CROSSING    0
 #define OPTIMIZE    0
 #define FLOCK_SIZE  5     // Number of robots in flock
 
@@ -61,9 +61,9 @@ double **data_glob;
 double **data_line;
 // good results ...
 
-double default_weight[5] = { 6, 5.2, 1.3, 0.01, 0.01 };
+double default_weight[5] = { 9.5, 7, 8, 0.01, 0.01 };
 
-float default_RATIO = 2.;
+float default_RATIO = 8;
 
   
 
@@ -151,7 +151,7 @@ void test_param(FILE *params, FILE *line_to_read){
   char message[255]; 
     
   /* Indice param, init, resol and final to be changed manually to give the parameter and its range */  
-  float init = 1.0; float resol = 1.0; float final = 10; int nb_param_tuned = 3; 
+  float init = 5; float resol = 1; float final = 40; int nb_param_tuned = 1; 
   int row = 1 + pow((floor(final-init)/resol + 1),nb_param_tuned);
   if(VERBOSE_M){printf("nb lines %d\n", row);}
   int col = 5;
@@ -204,20 +204,24 @@ void test_param(FILE *params, FILE *line_to_read){
     fprintf(params, "%d,%d\n", row, col);
     //fprintf(params, "File created\n"); 
     float i = init; float j = init; float k = init; float l = init;
-    for(i=init; i<=final; i += resol){
-      for(j=init; j<=final; j += resol){
-        for(k=init; k<=final; k += resol){
+    //for(i=init; i<=final; i += resol){
+      //for(j=init; j<=final; j += resol){
+        //for(k=init; k<=final; k += resol){
           //for(l=init; l<=final; l += resol){
-            weights[2] = i;
-            weights[1] = j;
-            weights[0] = k;
+            //weights[2] = i;
+            //weights[1] = j;
+            //weights[0] = k;
             //RATIO = (l - init) / (final - init); // scale back to [0, 1] range
-            fprintf(params, "%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2],RATIO);
+            weights[0] = 9.5; weights[1] = 7; weights[2] = 8; 
+            for(i=init; i<=final; i+=resol){ 
+              RATIO = i;
+              fprintf(params, "%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2],RATIO);
+              }
             //if(VERBOSE_M){printf("%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2], RATIO);}
           //}
-        }
-      }
-    }
+        //}
+      //}
+    //}
     read_csv(row, col, file_name, data_glob);
     fclose(params);
     //data_line[0][0] = line; 
@@ -331,6 +335,7 @@ void compute_performance (float* fit_o, float* fit_c, float * fit_v, int offset)
       // average displacement velocity along direction of migratory urge
       speed[0] = avg_loc[0] - avg_loc_old_G2[0];
       speed[1] = avg_loc[1] - avg_loc_old_G2[1];  
+      projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
 
       //printf("[%d]   [%f --> %f][%f --> %f]  == [%f][%f]\n", offset, avg_loc_old_G2[0], avg_loc[0], avg_loc_old_G2[1], avg_loc[1], speed[0], speed[1]);
 
@@ -338,8 +343,6 @@ void compute_performance (float* fit_o, float* fit_c, float * fit_v, int offset)
       avg_loc_old_G2[0] = avg_loc[0];
       avg_loc_old_G2[1] = avg_loc[1]; 
     }
-
-    projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
   }
   else{
     // average displacement velocity along direction of migratory urge
