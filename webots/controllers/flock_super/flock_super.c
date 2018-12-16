@@ -61,9 +61,9 @@ double **data_glob;
 double **data_line;
 // good results ...
 
-double default_weight[5] = { 9.5, 7, 8, 0.01, 0.01 };
+double default_weight[5] = { 8, 5.2, 1.3, 0.01, 0.01 };
 
-float default_RATIO = 8;
+float default_RATIO = 2.;
 
   
 
@@ -142,7 +142,7 @@ void handle_line_csv(FILE *line_to_read, int action, double line, double **data_
 void test_param(FILE *params, FILE *line_to_read){                              
   /*Create the .cvs file to test differents parameters, and upload it at every new reload*/
   float WEIGHT1 = 0.7; float WEIGHT2 = (0.02/10); float WEIGHT3 = (1.0/10); 
-  float RATIO = 1.0; 
+  float RATIO = 1.5; 
   float weights[4] = {WEIGHT1, WEIGHT2, WEIGHT3, RATIO};
   int line = 1; 
   
@@ -151,7 +151,7 @@ void test_param(FILE *params, FILE *line_to_read){
   char message[255]; 
     
   /* Indice param, init, resol and final to be changed manually to give the parameter and its range */  
-  float init = 5; float resol = 1; float final = 40; int nb_param_tuned = 1; 
+  float init = 3.0; float resol = 0.5; float final = 6; int nb_param_tuned = 3; 
   int row = 1 + pow((floor(final-init)/resol + 1),nb_param_tuned);
   if(VERBOSE_M){printf("nb lines %d\n", row);}
   int col = 5;
@@ -324,12 +324,12 @@ void compute_performance (float* fit_o, float* fit_c, float * fit_v, int offset)
       speed[1] = avg_loc[1] - avg_loc_old_G1[1];      
 
       //printf("[%d]   [%f --> %f][%f --> %f]  == [%f][%f]\n", offset, avg_loc_old_G1[0], avg_loc[0], avg_loc_old_G1[1], avg_loc[1], speed[0], speed[1]);
+      // adapt migration for crossing scenario ( -1.0 for the group going leftward)
+      projection = (speed[0]*(-migrx) + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
 
       // update location info for next timestep
       avg_loc_old_G1[0] = avg_loc[0];
       avg_loc_old_G1[1] = avg_loc[1];      
-      // adapt migration for crossing scenario ( -1.0 for the group going leftward)
-      projection = (speed[0]*(-migrx) + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
     }
     else{
       // average displacement velocity along direction of migratory urge
@@ -338,11 +338,13 @@ void compute_performance (float* fit_o, float* fit_c, float * fit_v, int offset)
       projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
 
       //printf("[%d]   [%f --> %f][%f --> %f]  == [%f][%f]\n", offset, avg_loc_old_G2[0], avg_loc[0], avg_loc_old_G2[1], avg_loc[1], speed[0], speed[1]);
+      projection = (speed[0]*migrx + speed[1]*migrz) / sqrt(migrx*migrx + migrz*migrz);
 
       // update location info for next timestep
       avg_loc_old_G2[0] = avg_loc[0];
       avg_loc_old_G2[1] = avg_loc[1]; 
     }
+
   }
   else{
     // average displacement velocity along direction of migratory urge

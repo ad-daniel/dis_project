@@ -395,9 +395,15 @@ void set_weights(int max_sens,float * wb,float * wm,float * wr,float * wj) {
 	 *wj = 0;                                             // Ignore join
    // If no obstacle 
    } else {
-	 *wb = 0.0;                                           // Ignore noisy sensors
-          	 *wj = 1 - n_flockmates/(FLOCK_SIZE - 1);             // Join weights decreases with number of flockmates
-   }
+	   *wb = 0.0;    
+    if(n_flockmates > 0){                                       // Ignore noisy sensors
+      //*wj = 0.8 - 0.8*(n_flockmates/(FLOCK_SIZE - 1));             // Join weights decreases with number of flockmates
+      *wj = 0.6;
+    }
+    else{
+      *wj = 1;
+    }
+  }
    
    // If the robot is alone for more  than MAX_TIME_ALONE continous time step (see check_if_alone())
    if(no_reynolds) {
@@ -519,8 +525,8 @@ int main(){
 	 
 // Loop step 6 : JOIN
    	 if(JOIN) {
-		jmsl =  -migr_diff/2+JOIN_BIAS;
-		jmsr =   migr_diff/2+JOIN_BIAS;   	
+		jmsl =  -migr_diff/2;
+		jmsr =   migr_diff/2;	
 		normalize_speed(&jmsr, &jmsl, JOIN_SPEED);
    	 }   	 
    	 
