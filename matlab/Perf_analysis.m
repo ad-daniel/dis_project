@@ -15,8 +15,8 @@ nb_simul = 0;
 
 while Reynolds_perf < 0
     disp(errmsg); 
-    [Reynolds_perf, errmsg] = fopen('Reynolds_performance Ratio [5.000,1.000,40.000].csv', 'r'); 
-    performances = csvread('Reynolds_performance Ratio [5.000,1.000,40.000].csv');
+    [Reynolds_perf, errmsg] = fopen('Reynolds_performance.csv', 'r'); 
+    performances = csvread('Reynolds_performance.csv');
     [M,N]=size(performances);
     
     %Find line with 1 0 0 0 0 to know when a simulation starts
@@ -115,9 +115,9 @@ for(j=1:2)
         boxplot(x, g);
         
         if(j==1) 
-            xticklabels({'23','3','895','895'});
+            xticklabels({'34','112','693','459'});
         elseif(j==2)
-            xticklabels({'23','55','11','1'});
+            xticklabels({'86','3','2','175'});
         end
         xlabel('Simulation n°');    ylabel('Performance');
         title({data_label(i+2)},'FontSize', 20);
@@ -153,7 +153,7 @@ for(i=1:4)
     bg = [zeros(length(bx1), 1); ones(length(bx2), 1); ...
         2*ones(length(bx3), 1); 3*ones(length(bx4),1); 4*ones(length(bx5),1)];
     boxplot(bx, bg);
-    xticklabels({'895','860','987','400', '890'});
+    xticklabels({'459','233','583','279', '693'});
     xlabel('Simulation n°');    ylabel('Performance');
     title({data_label(i+2)},'FontSize', 20);
     xt = get(gca, 'XTick'); set(gca, 'FontSize', 16)

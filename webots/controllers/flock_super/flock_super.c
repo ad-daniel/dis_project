@@ -61,9 +61,9 @@ double **data_glob;
 double **data_line;
 // good results ...
 
-double default_weight[5] = { 8, 5.2, 1.3, 0.01, 0.01 };
+double default_weight[5] = {8, 8, 3, 0.01, 0.01 };
 
-float default_RATIO = 2.;
+float default_RATIO = 1.5;
 
   
 
@@ -151,7 +151,7 @@ void test_param(FILE *params, FILE *line_to_read){
   char message[255]; 
     
   /* Indice param, init, resol and final to be changed manually to give the parameter and its range */  
-  float init = 3.0; float resol = 0.5; float final = 6; int nb_param_tuned = 3; 
+  float init = 1; float resol = 0.5; float final = 20; int nb_param_tuned = 1; 
   int row = 1 + pow((floor(final-init)/resol + 1),nb_param_tuned);
   if(VERBOSE_M){printf("nb lines %d\n", row);}
   int col = 5;
@@ -212,7 +212,7 @@ void test_param(FILE *params, FILE *line_to_read){
             //weights[1] = j;
             //weights[0] = k;
             //RATIO = (l - init) / (final - init); // scale back to [0, 1] range
-            weights[0] = 9.5; weights[1] = 7; weights[2] = 8; 
+            weights[0] = 8; weights[1] = 8; weights[2] = 3; 
             for(i=init; i<=final; i+=resol){ 
               RATIO = i;
               fprintf(params, "%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2],RATIO);
@@ -437,9 +437,9 @@ int main(int argc, char *args[]) {
         performance_instant = fit_orientation * fit_cohesion * fit_velocity;
         sum_perf += performance_instant; // NB: for crossing, the fitness considered is the combined fitness of both groups
         performance_overall = sum_perf / t; 
-        
         //printf("[GROUP %d][time %8d] :: orient: %1.6f :: cohes : %1.6f :: veloc : %1.6f ::: perf_instant %1.6f ::: perf_overall %1.6f\n", i, t, fit_orientation, fit_cohesion, fit_velocity, performance_instant, performance_overall);      
       }
+      //printf("%f\n", fit_orientation); 
 
       //Mathilde
       if(OPTIMIZE && (t != 0)){
