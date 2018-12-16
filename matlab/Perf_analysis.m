@@ -115,9 +115,9 @@ for(j=1:2)
         boxplot(x, g);
         
         if(j==1) 
-            xticklabels({'34','112','693','459'});
+            xticklabels({'15','15','15','15'});
         elseif(j==2)
-            xticklabels({'86','3','2','175'});
+            xticklabels({'15','15','1','4'});
         end
         xlabel('Simulation n°');    ylabel('Performance');
         title({data_label(i+2)},'FontSize', 20);
@@ -153,7 +153,7 @@ for(i=1:4)
     bg = [zeros(length(bx1), 1); ones(length(bx2), 1); ...
         2*ones(length(bx3), 1); 3*ones(length(bx4),1); 4*ones(length(bx5),1)];
     boxplot(bx, bg);
-    xticklabels({'459','233','583','279', '693'});
+    xticklabels({'15','10','11','21', '2'});
     xlabel('Simulation n°');    ylabel('Performance');
     title({data_label(i+2)},'FontSize', 20);
     xt = get(gca, 'XTick'); set(gca, 'FontSize', 16)

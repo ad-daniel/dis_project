@@ -32,7 +32,7 @@
 #define VERBOSE_M   1
 
 #define CROSSING    0
-#define OPTIMIZE    0
+#define OPTIMIZE    1
 #define FLOCK_SIZE  5     // Number of robots in flock
 
 #if CROSSING == 1
@@ -61,9 +61,10 @@ double **data_glob;
 double **data_line;
 // good results ...
 
-double default_weight[5] = {8, 8, 3, 0.01, 0.01 };
+double default_weight[5] = {9, 8.45, 3, 0.01, 0.01 };
+double weight_join = 190;
 
-float default_RATIO = 1.5;
+float default_RATIO = 2;
 
   
 
@@ -75,8 +76,8 @@ void send_default_params(){
   char message[255]; 
 
   // send default parameters
-  printf("Sending default parameters [%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n", default_weight[0], default_weight[1], default_weight[2], default_RATIO, migrx, migrz);
-  sprintf(message, "%f#%f##%f#%f#%f#%f\n", migrx, migrz, default_weight[0], default_weight[1], default_weight[2], default_RATIO);
+  printf("Sending default parameters [%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f] and weight join[%.3f]\n", default_weight[0], default_weight[1], default_weight[2], default_RATIO, migrx, migrz, weight_join);
+  sprintf(message, "%f#%f##%f#%f#%f#%f#%f\n", migrx, migrz, default_weight[0], default_weight[1], default_weight[2], default_RATIO, weight_join);
 
   wb_emitter_send(emitter, message, strlen(message) + 1);
 }
@@ -151,13 +152,14 @@ void test_param(FILE *params, FILE *line_to_read){
   char message[255]; 
     
   /* Indice param, init, resol and final to be changed manually to give the parameter and its range */  
-  float init = 1; float resol = 0.5; float final = 20; int nb_param_tuned = 1; 
+  float init = 8; float resol = 0.2; float final = 12; int nb_param_tuned = 2; 
   int row = 1 + pow((floor(final-init)/resol + 1),nb_param_tuned);
   if(VERBOSE_M){printf("nb lines %d\n", row);}
   int col = 5;
   
   //Create a .csv file with the different information about the simulation tested
-  asprintf (&file_name, "Test_parameters_WEIGHT_Reynolds_[%.3f,%.3f,%.3f][%.3f].csv", init, resol, final,RATIO);
+  //asprintf (&file_name, "Test_parameters_WEIGHT_Reynolds_[%.3f,%.3f,%.3f][%.3f].csv", init, resol, final,RATIO);
+  asprintf (&file_name, "Test_parameters_1 and 2 [%.3f,%.3f,%.3f][%.3f].csv", init, resol, final,RATIO);
 
   
   //Allocate space to store usefull param for the current simulation
@@ -205,22 +207,23 @@ void test_param(FILE *params, FILE *line_to_read){
     //fprintf(params, "File created\n"); 
     float i = init; float j = init; float k = init; float l = init;
     //for(i=init; i<=final; i += resol){
-      //for(j=init; j<=final; j += resol){
-        //for(k=init; k<=final; k += resol){
+      for(j=init; j<=final; j += resol){
+        for(k=init; k<=final; k += resol){
           //for(l=init; l<=final; l += resol){
             //weights[2] = i;
-            //weights[1] = j;
-            //weights[0] = k;
+            weights[1] = j;
+            weights[0] = k;
             //RATIO = (l - init) / (final - init); // scale back to [0, 1] range
-            weights[0] = 8; weights[1] = 8; weights[2] = 3; 
-            for(i=init; i<=final; i+=resol){ 
-              RATIO = i;
-              fprintf(params, "%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2],RATIO);
-              }
+            //weights[0] = 8; weights[1] = 8; weights[2] = 3; RATIO = 1.5; 
+            //for(i=init; i<=final; i+=resol){ 
+              //weight_join = i;
+              RATIO = 2; weights[2]=3; weight_join = 190;
+              fprintf(params, "%.3f,%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2],RATIO, weight_join);
+              //}
             //if(VERBOSE_M){printf("%.3f,%.3f,%.3f,%.3f\n", weights[0], weights[1],weights[2], RATIO);}
           //}
-        //}
-      //}
+        }
+      }
     //}
     read_csv(row, col, file_name, data_glob);
     fclose(params);
@@ -229,7 +232,7 @@ void test_param(FILE *params, FILE *line_to_read){
   
   //Send to the robot controller
   int lp = (int)data_line[0][0];
-  sprintf(message, "%f#%f##%f#%f#%f#%f\n", migrx, migrz, data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3]);
+  sprintf(message, "%f#%f##%f#%f#%f#%f#%f\n", migrx, migrz, data_glob[lp][0], data_glob[lp][1], data_glob[lp][2], data_glob[lp][3], data_glob[lp][4]);
   //printf("%s\n", message);
   if(wb_emitter_send(emitter, message, strlen(message) + 1)){printf("Send\n");}
   printf("actual line %f\n", data_line[0][0]);

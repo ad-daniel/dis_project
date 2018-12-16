@@ -52,7 +52,7 @@
 // Reynolds threshold and weights
 float RULE1_THRESHOLD = 0.1;  	// Threshold to activate aggregation rule
 float RULE2_THRESHOLD = 0.12;  	// Threshold to activate dispersion rule
-float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float REYN_MIGR_RATIO;
+float RULE1_WEIGHT; float RULE2_WEIGHT; float RULE3_WEIGHT; float REYN_MIGR_RATIO; float WEIGHT_JOIN; 
 
 // Braitenberg parameters
 #define BRAITENBERG_LOWER_THRESH 350  // Below this value, no avoidance
@@ -135,9 +135,11 @@ static void reset() {
     while(wb_receiver_get_queue_length(receiver3) == 0){wb_robot_step(TIME_STEP);}
     while(wb_receiver_get_queue_length(receiver3) > 0){ 
        inbuffer = (char*) wb_receiver_get_data(receiver3);
-       sscanf(inbuffer,"%f#%f##%f#%f#%f#%f\n", &migr[0], &migr[1], &RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&REYN_MIGR_RATIO);
+       sscanf(inbuffer,"%f#%f##%f#%f#%f#%f#%f\n", &migr[0], &migr[1], &RULE1_WEIGHT,&RULE2_WEIGHT,&RULE3_WEIGHT,&REYN_MIGR_RATIO,&WEIGHT_JOIN);
        // Print the weigths in the console
-       if(robot_id == ROBOT_DEBUG){ printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,REYN_MIGR_RATIO, migr[0], migr[1]); }
+       if(robot_id == ROBOT_DEBUG){ 
+           printf("Received from supervisor [%.3f][%.3f][%.3f][%.3f] and migr [%.3f][%.3f] and weight join [%.3f]\n",RULE1_WEIGHT,RULE2_WEIGHT,RULE3_WEIGHT,REYN_MIGR_RATIO, migr[0], migr[1],WEIGHT_JOIN); 
+       }
        wb_receiver_next_packet(receiver3);
     }
 // Set the reynold to migration ratio according to the robot id
@@ -201,7 +203,7 @@ void compute_wheel_speeds(int *msl, int *msr) {
     float x = speed[robot_id][0];
     float y = speed[robot_id][1];
     float range = sqrtf(x*x + y*y);      // Distance to the wanted position
-    float bearing = atan2(y, x);         // Orientation of the wanted position
+    float bearing = range == 0 ? 0.0 : atan2(y, x);         // Orientation of the wanted position
 // Forward control law
     float u = Ku*range;
 // Rotational control Law
@@ -525,8 +527,16 @@ int main(){
 	 
 // Loop step 6 : JOIN
    	 if(JOIN) {
-		jmsl =  -migr_diff/2;
-		jmsr =   migr_diff/2;	
+		//jmsl =  -migr_diff/2;
+		//jmsr =   migr_diff/2;
+		if((my_position[2]<M_PI * 0.85/2 && my_position[2] > 0.0) || (my_position[2] < 2*M_PI && my_position[2] > 31*M_PI/20)){
+            		jmsl = my_position[1]*WEIGHT_JOIN/2; 
+            		jmsr = -my_position[1]*WEIGHT_JOIN/2; 
+		}
+		else{
+            		jmsr = 0; 
+            		jmsl = 0; 
+		}	
 		normalize_speed(&jmsr, &jmsl, JOIN_SPEED);
    	 }   	 
    	 
