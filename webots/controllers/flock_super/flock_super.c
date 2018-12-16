@@ -31,7 +31,7 @@
 
 #define VERBOSE_M   1
 
-#define CROSSING    0
+#define CROSSING    1
 #define OPTIMIZE    0
 #define FLOCK_SIZE  5     // Number of robots in flock
 
@@ -61,9 +61,9 @@ double **data_glob;
 double **data_line;
 // good results ...
 
-double default_weight[5] = { 8, 5.2, 1.3, 0.01, 0.01 };
+double default_weight[5] = { 7, 7, 4, 0.01, 0.01 };
 
-float default_RATIO = 2.;
+float default_RATIO = 1.5;
 
   
 

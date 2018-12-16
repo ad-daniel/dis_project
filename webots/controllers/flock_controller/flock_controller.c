@@ -201,7 +201,7 @@ void compute_wheel_speeds(int *msl, int *msr) {
     float x = speed[robot_id][0];
     float y = speed[robot_id][1];
     float range = sqrtf(x*x + y*y);      // Distance to the wanted position
-    float bearing = atan2(y, x);         // Orientation of the wanted position
+    float bearing = range == 0 ? 0.0 : atan2(y, x);         // Orientation of the wanted position
 // Forward control law
     float u = Ku*range;
 // Rotational control Law
@@ -525,8 +525,14 @@ int main(){
 	 
 // Loop step 6 : JOIN
    	 if(JOIN) {
-		jmsl =  -migr_diff/2;
-		jmsr =   migr_diff/2;	
+      if ((my_position[2] < M_PI/2*0.85 && my_position[2] > 0.0) || (my_position[2] < 2*M_PI && my_position[2] > 31*M_PI/20)){
+        jmsl =  my_position[1]*400/2;
+        jmsr = -my_position[1]*400/2; 
+      }
+        else{
+          jmsr = 0;
+          jmsl = 0;
+        }
 		normalize_speed(&jmsr, &jmsl, JOIN_SPEED);
    	 }   	 
    	 
